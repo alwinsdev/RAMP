@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\DashboardDataProvider;
 use App\DataObjects\Breakdown;
 use App\Services\DashboardService;
 use Tests\TestCase;
 
 /**
- * Validates DashboardService aggregation against the seed dataset expectations
- * (docs/08 §9) and the reconciliation rules (BR-CT-03, BR-HL-08). Assertions are
- * time-independent: structural counts plus reconciliation, and the always-Unknown
- * asset (PUB-0002 has a null construction year).
+ * Validates DashboardService aggregation against the reconciliation rules
+ * (BR-CT-03, BR-HL-08). Assertions are structural — derived from the live dataset
+ * rather than hard-coded counts — so they hold as the dataset grows.
  */
 final class AggregationTest extends TestCase
 {
@@ -21,82 +21,72 @@ final class AggregationTest extends TestCase
         return $this->app->make(DashboardService::class)->summary();
     }
 
-    public function test_kpi_totals_match_seed(): void
+    /** @return array<int, \App\DataObjects\AssetData> */
+    private function rawAssets(): array
+    {
+        return $this->app->make(DashboardDataProvider::class)->allAssets();
+    }
+
+    public function test_kpi_totals_match_the_dataset(): void
+    {
+        $summary = $this->summary();
+        $provider = $this->app->make(DashboardDataProvider::class);
+
+        $this->assertSame(count($this->rawAssets()), $summary->totalAssets);
+        $this->assertSame(4, $summary->totalCategories);
+        $this->assertSame(count($provider->zones()), $summary->totalZones);
+        $this->assertSame(count($provider->panchayats()), $summary->totalPanchayats);
+        $this->assertGreaterThan(0, $summary->totalAssets);
+    }
+
+    public function test_zone_breakdown_sum_reconciles_to_total(): void
+    {
+        $summary = $this->summary();
+        $this->assertSame(
+            $summary->totalAssets,
+            array_sum(array_map(static fn (Breakdown $b): int => $b->count, $summary->zoneBreakdown)),
+        );
+    }
+
+    public function test_panchayat_breakdown_sum_reconciles_to_total(): void
+    {
+        $summary = $this->summary();
+        $this->assertSame(
+            $summary->totalAssets,
+            array_sum(array_map(static fn (Breakdown $b): int => $b->count, $summary->panchayatBreakdown)),
+        );
+    }
+
+    public function test_category_breakdown_shows_all_four_and_reconciles(): void
     {
         $summary = $this->summary();
 
-        $this->assertSame(8, $summary->totalAssets);
-        $this->assertSame(4, $summary->totalCategories);
-        $this->assertSame(5, $summary->totalZones);
-        $this->assertSame(5, $summary->totalPanchayats);
+        $this->assertCount(4, $summary->categoryBreakdown); // zero-count categories still shown (BR-CT-04)
+        $this->assertSame(
+            $summary->totalAssets,
+            array_sum(array_map(static fn (Breakdown $b): int => $b->count, $summary->categoryBreakdown)),
+        );
     }
 
-    public function test_zone_breakdown_counts_and_sorting(): void
+    public function test_breakdowns_are_sorted_by_count_descending(): void
     {
-        $rows = $this->summary()->zoneBreakdown;
-
-        $counts = $this->indexByName($rows);
-        $this->assertSame(6, $counts['North Zone']);
-        $this->assertSame(1, $counts['South Zone']);
-        $this->assertSame(1, $counts['East Zone']);
-
-        // Sorted by count desc -> North Zone leads (DB-11).
-        $this->assertSame('North Zone', $rows[0]->name);
-
-        // Zone-wise sum reconciles to total (AC-DASH-02).
-        $this->assertSame(8, array_sum(array_map(static fn (Breakdown $b): int => $b->count, $rows)));
+        $counts = array_map(static fn (Breakdown $b): int => $b->count, $this->summary()->zoneBreakdown);
+        $sorted = $counts;
+        rsort($sorted);
+        $this->assertSame($sorted, $counts, 'Zone breakdown should be sorted by count desc (DB-11).');
     }
 
-    public function test_panchayat_breakdown_reconciles(): void
-    {
-        $rows = $this->summary()->panchayatBreakdown;
-        $counts = $this->indexByName($rows);
-
-        $this->assertSame(5, $counts['Erumapalayam Panchayat']);
-        $this->assertSame(1, $counts['Ammapet Panchayat']);
-        $this->assertSame(8, array_sum(array_map(static fn (Breakdown $b): int => $b->count, $rows)));
-    }
-
-    public function test_category_breakdown_reconciles_and_shows_all(): void
-    {
-        $rows = $this->summary()->categoryBreakdown;
-        $counts = $this->indexByName($rows);
-
-        $this->assertSame(3, $counts['Educational Assets']);
-        $this->assertSame(1, $counts['Healthcare Assets']);
-        $this->assertSame(2, $counts['Water Infrastructure']);
-        $this->assertSame(2, $counts['Public Infrastructure']);
-
-        // All four categories present; sum reconciles to total (BR-CT-03/04).
-        $this->assertCount(4, $rows);
-        $this->assertSame(8, array_sum(array_map(static fn (Breakdown $b): int => $b->count, $rows)));
-    }
-
-    public function test_health_summary_reconciles_and_excludes_unknown_from_base(): void
+    public function test_health_reconciles_and_excludes_unknown_from_base(): void
     {
         $health = $this->summary()->health;
 
-        // Every asset lands in exactly one bucket (reconciliation).
-        $this->assertSame(8, $health->total());
-
-        // PUB-0002 (null construction year) is always Unknown, regardless of the year.
-        $this->assertSame(1, $health->unknown);
+        // Every asset lands in exactly one bucket.
+        $this->assertSame(count($this->rawAssets()), $health->total());
 
         // Percentage base excludes Unknown (BR-HL-08).
-        $this->assertSame(7, $health->healthCountedTotal());
-    }
+        $this->assertSame($health->total() - $health->unknown, $health->healthCountedTotal());
 
-    /**
-     * @param  array<int, Breakdown>  $rows
-     * @return array<string, int>
-     */
-    private function indexByName(array $rows): array
-    {
-        $map = [];
-        foreach ($rows as $row) {
-            $map[$row->name] = $row->count;
-        }
-
-        return $map;
+        // The dataset deliberately includes at least one Unknown asset (MD-04).
+        $this->assertGreaterThanOrEqual(1, $health->unknown);
     }
 }

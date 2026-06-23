@@ -97,6 +97,131 @@ final class AssetService
         return $this->provider->categories();
     }
 
+    // ---- Single-node lookups (used by breadcrumbs and screen headers) ----
+
+    public function districtById(string $id): ?DistrictData
+    {
+        foreach ($this->provider->districts() as $district) {
+            if ($district->id === $id) {
+                return $district;
+            }
+        }
+
+        return null;
+    }
+
+    public function zoneById(string $id): ?ZoneData
+    {
+        foreach ($this->provider->zones() as $zone) {
+            if ($zone->id === $id) {
+                return $zone;
+            }
+        }
+
+        return null;
+    }
+
+    public function panchayatById(string $id): ?PanchayatData
+    {
+        foreach ($this->provider->panchayats() as $panchayat) {
+            if ($panchayat->id === $id) {
+                return $panchayat;
+            }
+        }
+
+        return null;
+    }
+
+    public function categoryById(string $id): ?CategoryData
+    {
+        foreach ($this->provider->categories() as $category) {
+            if ($category->id === $id) {
+                return $category;
+            }
+        }
+
+        return null;
+    }
+
+    // ---- Scoped child asset counts (used by the hierarchy drill-down screens) ----
+    // Counts are derived from the live dataset (BR-DI-05); zero is a valid count.
+
+    /**
+     * Asset count per district (keyed by district id), over the whole dataset.
+     *
+     * @return array<string, int>
+     */
+    public function assetCountsByDistrict(): array
+    {
+        return $this->tally(fn (AssetData $a): ?string => $a->districtId);
+    }
+
+    /**
+     * Asset count per zone within a district.
+     *
+     * @return array<string, int>
+     */
+    public function assetCountsByZone(string $districtId): array
+    {
+        return $this->tally(
+            fn (AssetData $a): ?string => $a->zoneId,
+            fn (AssetData $a): bool => $a->districtId === $districtId,
+        );
+    }
+
+    /**
+     * Asset count per panchayat within a zone.
+     *
+     * @return array<string, int>
+     */
+    public function assetCountsByPanchayat(string $zoneId): array
+    {
+        return $this->tally(
+            fn (AssetData $a): ?string => $a->panchayatId,
+            fn (AssetData $a): bool => $a->zoneId === $zoneId,
+        );
+    }
+
+    /**
+     * Asset count per category within a panchayat.
+     *
+     * @return array<string, int>
+     */
+    public function assetCountsByCategory(string $panchayatId): array
+    {
+        return $this->tally(
+            fn (AssetData $a): ?string => $a->categoryId,
+            fn (AssetData $a): bool => $a->panchayatId === $panchayatId,
+        );
+    }
+
+    /**
+     * Group raw assets by a key, optionally scoped by a predicate, and count.
+     *
+     * @param  callable(AssetData): ?string  $keyOf
+     * @param  (callable(AssetData): bool)|null  $scope
+     * @return array<string, int>
+     */
+    private function tally(callable $keyOf, ?callable $scope = null): array
+    {
+        $counts = [];
+
+        foreach ($this->provider->assets() as $asset) {
+            if ($scope !== null && ! $scope($asset)) {
+                continue;
+            }
+
+            $key = $keyOf($asset);
+            if ($key === null) {
+                continue;
+            }
+
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
+
+        return $counts;
+    }
+
     /** Attach the computed lifecycle to a raw asset (the one enrichment point). */
     private function enrich(AssetData $asset): AssetData
     {
@@ -112,6 +237,10 @@ final class AssetService
      */
     private function matchesFilter(AssetData $asset, AssetFilter $filter): bool
     {
+        if ($filter->districtId !== null && $asset->districtId !== $filter->districtId) {
+            return false;
+        }
+
         if ($filter->zoneId !== null && $asset->zoneId !== $filter->zoneId) {
             return false;
         }

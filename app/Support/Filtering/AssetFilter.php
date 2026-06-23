@@ -16,6 +16,7 @@ namespace App\Support\Filtering;
 final readonly class AssetFilter
 {
     public function __construct(
+        public ?string $districtId = null,
         public ?string $zoneId = null,
         public ?string $panchayatId = null,
         public ?string $categoryId = null,
@@ -33,6 +34,7 @@ final readonly class AssetFilter
     public static function fromArray(array $data): self
     {
         return new self(
+            districtId: self::nullableString($data['districtId'] ?? null),
             zoneId: self::nullableString($data['zoneId'] ?? null),
             panchayatId: self::nullableString($data['panchayatId'] ?? null),
             categoryId: self::nullableString($data['categoryId'] ?? null),
@@ -45,7 +47,8 @@ final readonly class AssetFilter
     /** True when no filter and no search term is active. */
     public function isEmpty(): bool
     {
-        return $this->zoneId === null
+        return $this->districtId === null
+            && $this->zoneId === null
             && $this->panchayatId === null
             && $this->categoryId === null
             && $this->assetType === null

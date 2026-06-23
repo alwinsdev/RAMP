@@ -46,6 +46,13 @@
     @endisset
 
     <main class="mx-auto max-w-[1280px] px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
+        @if (session('notice'))
+            <div class="mb-6 flex items-center gap-2.5 rounded-xl border border-hairline bg-surface px-4 py-3 text-sm text-ink-soft shadow-[var(--shadow-card)]">
+                <svg class="h-4 w-4 shrink-0 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                {{ session('notice') }}
+            </div>
+        @endif
+
         {{ $slot }}
     </main>
 

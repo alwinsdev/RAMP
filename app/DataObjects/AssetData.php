@@ -31,6 +31,7 @@ final readonly class AssetData
         public ?string $panchayatName = null,
         public ?string $zoneId = null,
         public ?string $zoneName = null,
+        public ?string $districtId = null,
         public ?string $districtName = null,
         public ?string $address = null,
         public ?float $latitude = null,
@@ -67,6 +68,7 @@ final readonly class AssetData
             panchayatName: isset($row['panchayat_name']) ? (string) $row['panchayat_name'] : null,
             zoneId: isset($row['zone_id']) ? (string) $row['zone_id'] : null,
             zoneName: isset($row['zone_name']) ? (string) $row['zone_name'] : null,
+            districtId: isset($row['district_id']) ? (string) $row['district_id'] : null,
             districtName: isset($row['district_name']) ? (string) $row['district_name'] : null,
             address: isset($row['address']) ? (string) $row['address'] : null,
             latitude: isset($row['latitude']) ? (float) $row['latitude'] : null,
@@ -95,6 +97,7 @@ final readonly class AssetData
             panchayatName: $this->panchayatName,
             zoneId: $this->zoneId,
             zoneName: $this->zoneName,
+            districtId: $this->districtId,
             districtName: $this->districtName,
             address: $this->address,
             latitude: $this->latitude,
@@ -123,5 +126,20 @@ final readonly class AssetData
     public function hasPhotos(): bool
     {
         return $this->photos !== [];
+    }
+
+    /**
+     * The asset's hierarchy context (for breadcrumbs / drill-down links).
+     *
+     * @return array{districtId:?string, zoneId:?string, panchayatId:?string, categoryId:?string}
+     */
+    public function context(): array
+    {
+        return [
+            'districtId' => $this->districtId,
+            'zoneId' => $this->zoneId,
+            'panchayatId' => $this->panchayatId,
+            'categoryId' => $this->categoryId,
+        ];
     }
 }

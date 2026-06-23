@@ -106,7 +106,7 @@ Built and verified (36 tests passing, no database):
 
 - Laravel 12.62 scaffolded at repo root; Livewire 3, Tailwind v4, Alpine, ApexCharts installed; default migrations/SQLite removed; session/cache/queue on file/sync.
 - `config/ramp.php` + dedicated `mock-data` filesystem disk.
-- Seed mock data (8 assets per `docs/08`) with full status variety incl. Unknown, a no-coordinates asset, and assets with/without photos.
+- Realistic mock data (**100 assets across 13 panchayats in 2 districts** — Salem & Erode) with real locality names, **accurate geographic coordinates**, real local category images (`public/asset-images/`, sourced from Wikimedia Commons), full status variety incl. Unknown, a no-coordinates asset, and assets with/without photos. The first 28 are hand-authored anchors; the rest are produced by `tools/generate-mock-assets.php` (deterministic dev-time generator — not part of the app runtime). `PAN-VEE` is kept empty to demonstrate zero-count categories.
 - `LifecycleStatus` enum + `LifecycleCalculator` + `LifecycleResult` — **17 unit tests** cover the boundary table (RL 14/5/−1/0, Unknown, future year, non-positive life).
 - DTOs + `AssetDataProvider`/`DashboardDataProvider` contracts.
 - `MockAssetProvider`/`MockDashboardProvider` + `ReadsMockJson` trait.
@@ -119,12 +119,14 @@ Built and verified (36 tests passing, no database):
 
 ---
 
-## 6. What's next (not built yet)
+## 6. Progress
 
-- **Sprint 1:** Hierarchy screens (ZoneList/PanchayatList/CategoryList), Asset List table + status badges, breadcrumb wiring, `#[Url]` drill-down context.
-- **Sprint 2:** Asset Detail (5 groups), Photo Gallery, Location View (Google Maps), Lifecycle View (ApexCharts).
-- **Sprint 3:** Real Dashboard (replaces `Home`) with ApexCharts health distribution + drill-down shortcuts; Search/Filter bar with chips + reset.
-- **Sprint 4:** Responsive table→cards, loading/empty/error polish, QA vs acceptance criteria, demo script.
+- ✅ **Sprint 1 (done):** District → Zone → Panchayat → Category hierarchy screens with scoped counts, the Asset List convergence screen (table + mobile cards, `#[Url]` filter/search context, chips, reset, result count, status badges), and a basic Asset Detail. `BreadcrumbBuilder`, scoped count helpers, `node-card`/`asset-card`/`category-icon`/`detail-row` primitives.
+- ✅ **Sprint 2 (done):** Asset Detail sub-views — Photo Gallery (Alpine lightbox + placeholders), Location View (Google Maps via Alpine loader + "location unavailable" + keyless fallback), Lifecycle View (ApexCharts life-consumed gauge). Routes `assets.photos|location|lifecycle`; map/chart JS in `resources/js/app.js`.
+- ✅ **Sprint 3 (done):** Real **Dashboard** at `/` (replaced the `Home` placeholder) — KPI row, ApexCharts health donut, zone/panchayat/category breakdowns, every figure a drill-down shortcut into the filtered Asset List. Full select-based **filter bar** on the Asset List (Zone, Panchayat constrained by Zone, Category, Type constrained by Category, Status) with live updates, chips, and reset.
+- ✅ **Sprint 4 (done):** Responsive breadcrumb collapse (Home / … / current), SPA row navigation, QA acceptance sweep, and the demo script (`docs/13-demo-script.md`).
+
+**POC COMPLETE** — all eight modules delivered against mock JSON with a future-ready, zero-rewrite migration path. Test suite: **73 passing** (PHPUnit, no database).
 
 ---
 

@@ -65,6 +65,11 @@
         scroll-behavior: smooth;
     }
 
+    /* Hide Alpine-cloaked elements (e.g. the photo lightbox) until Alpine boots. */
+    [x-cloak] {
+        display: none !important;
+    }
+
     body {
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
