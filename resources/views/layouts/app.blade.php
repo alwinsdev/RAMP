@@ -66,7 +66,7 @@
     <footer class="mx-auto max-w-[1280px] px-4 pb-10 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-3 border-t border-hairline/70 pt-5 text-[11px] font-medium text-ink-muted sm:flex-row sm:items-center sm:justify-between">
             <p>
-                Developed by <span class="font-bold" style="color: #d93025;">Red</span><span class="font-bold text-ink">Mind Technologies</span>
+                Developed by <a href="https://redmindtechnologies.com" target="_blank" class="font-bold hover:underline"><span style="color: #d93025;">R</span><span class="text-ink">ed</span><span style="color: #d93025;">M</span><span class="text-ink">ind Technologies</span></a>
             </p>
             <p>
                 Support: <a href="mailto:support@redmindtechnologies.com" class="hover:text-brand transition">support@redmindtechnologies.com</a>
