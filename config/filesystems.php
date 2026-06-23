@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // The app serves no files from private storage (asset images live in
+            // public/). Disable the generic storage/{path} serving route — least privilege.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

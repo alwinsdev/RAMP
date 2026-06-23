@@ -85,4 +85,15 @@ return [
     */
     'google_maps_api_key' => env('GOOGLE_MAPS_API_KEY', ''),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Security headers
+    |--------------------------------------------------------------------------
+    |
+    | Toggle the baseline HTTP security headers applied by SecurityHeaders
+    | middleware (CSP, X-Frame-Options, nosniff, Referrer-Policy, etc.).
+    | Set RAMP_SECURITY_HEADERS=false only to debug a CSP/map issue.
+    */
+    'security_headers' => (bool) env('RAMP_SECURITY_HEADERS', true),
+
 ];

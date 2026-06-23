@@ -33,6 +33,9 @@ final class AssetList extends Component
     #[Url] public string $status = '';
     #[Url] public string $q = '';
 
+    /** The only properties a user is allowed to clear/reset (defence in depth). */
+    private const FILTERABLE = ['districtId', 'zoneId', 'panchayatId', 'categoryId', 'assetType', 'status', 'q'];
+
     /** When the zone changes, drop any now-incompatible panchayat selection (BR-FL-04). */
     public function updatedZoneId(): void
     {
@@ -47,14 +50,16 @@ final class AssetList extends Component
 
     public function removeFilter(string $key): void
     {
-        if (property_exists($this, $key)) {
+        // Whitelist: only declared filter properties may be cleared, never arbitrary
+        // (inherited/internal) component state reachable via property_exists().
+        if (in_array($key, self::FILTERABLE, true)) {
             $this->{$key} = '';
         }
     }
 
     public function resetFilters(): void
     {
-        $this->reset(['districtId', 'zoneId', 'panchayatId', 'categoryId', 'assetType', 'status', 'q']);
+        $this->reset(self::FILTERABLE);
     }
 
     public function render(AssetService $assets, BreadcrumbBuilder $crumbs)
