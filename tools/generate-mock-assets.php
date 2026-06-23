@@ -54,7 +54,7 @@ $catImages = [
     'CAT-EDU' => ['/asset-images/edu-1.jpg', '/asset-images/edu-2.jpg', '/asset-images/edu-3.jpg'],
     'CAT-HLT' => ['/asset-images/hlt-1.jpg', '/asset-images/hlt-2.jpg', '/asset-images/hlt-3.jpg'],
     'CAT-WAT' => ['/asset-images/wat-1.jpg', '/asset-images/wat-2.jpg', '/asset-images/wat-3.jpg'],
-    'CAT-PUB' => ['/asset-images/pub-1.jpg', '/asset-images/pub-2.jpg', '/asset-images/pub-3.png'],
+    'CAT-PUB' => ['/asset-images/pub-1.jpg', '/asset-images/pub-2.jpg', '/asset-images/pub-3.jpg'],
 ];
 
 $numberPrefix = ['CAT-EDU' => 'EDU', 'CAT-HLT' => 'HLT', 'CAT-WAT' => 'WAT', 'CAT-PUB' => 'PUB'];

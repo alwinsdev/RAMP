@@ -106,7 +106,7 @@ Built and verified (36 tests passing, no database):
 
 - Laravel 12.62 scaffolded at repo root; Livewire 3, Tailwind v4, Alpine, ApexCharts installed; default migrations/SQLite removed; session/cache/queue on file/sync.
 - `config/ramp.php` + dedicated `mock-data` filesystem disk.
-- Realistic mock data (**100 assets across 13 panchayats in 2 districts** — Salem & Erode) with real locality names, **accurate geographic coordinates**, real local category images (`public/asset-images/`, sourced from Wikimedia Commons), full status variety incl. Unknown, a no-coordinates asset, and assets with/without photos. The first 28 are hand-authored anchors; the rest are produced by `tools/generate-mock-assets.php` (deterministic dev-time generator — not part of the app runtime). `PAN-VEE` is kept empty to demonstrate zero-count categories.
+- Realistic mock data (**100 assets across 13 panchayats in 2 districts** — Salem & Erode) with real locality names, **accurate geographic coordinates**, real local category images (`public/asset-images/`, **Tamil Nadu** government buildings from Wikimedia Commons — incl. Salem-district water tanks), full status variety incl. Unknown, a no-coordinates asset, and assets with/without photos. The first 28 are hand-authored anchors; the rest are produced by `tools/generate-mock-assets.php` (deterministic dev-time generator — not part of the app runtime). `PAN-VEE` is kept empty to demonstrate zero-count categories.
 - `LifecycleStatus` enum + `LifecycleCalculator` + `LifecycleResult` — **17 unit tests** cover the boundary table (RL 14/5/−1/0, Unknown, future year, non-positive life).
 - DTOs + `AssetDataProvider`/`DashboardDataProvider` contracts.
 - `MockAssetProvider`/`MockDashboardProvider` + `ReadsMockJson` trait.
