@@ -11,6 +11,7 @@ use App\DataObjects\DistrictData;
 use App\DataObjects\PanchayatData;
 use App\DataObjects\PhotoData;
 use App\DataObjects\ZoneData;
+use App\Enums\LifecycleStatus;
 use App\Support\Auth\Scope;
 use App\Support\Filtering\AssetFilter;
 use App\Support\Lifecycle\LifecycleCalculator;
@@ -30,8 +31,7 @@ final class AssetService
         private readonly AssetDataProvider $provider,
         private readonly LifecycleCalculator $lifecycle,
         private readonly Scope $scope,
-    ) {
-    }
+    ) {}
 
     /**
      * Raw assets visible to the current user (role-based scope, CR-01 #6).
@@ -87,7 +87,7 @@ final class AssetService
                 continue;
             }
 
-            $status = $asset->lifecycle?->status ?? \App\Enums\LifecycleStatus::Unknown;
+            $status = $asset->lifecycle?->status ?? LifecycleStatus::Unknown;
 
             $markers[] = [
                 'id' => $asset->id,
@@ -164,8 +164,17 @@ final class AssetService
 
     // ---- Single-node lookups (used by breadcrumbs and screen headers) ----
 
+    // These single-node lookups are role-scoped exactly like detail(): a node
+    // outside the user's scope resolves to null, so the hierarchy drill-down
+    // screens (which redirect on null) cannot disclose an out-of-scope district /
+    // zone / panchayat name via a hand-edited route param (RBAC / IDOR).
+
     public function districtById(string $id): ?DistrictData
     {
+        if (! $this->scope->allowsDistrict($id)) {
+            return null;
+        }
+
         foreach ($this->provider->districts() as $district) {
             if ($district->id === $id) {
                 return $district;
@@ -179,7 +188,7 @@ final class AssetService
     {
         foreach ($this->provider->zones() as $zone) {
             if ($zone->id === $id) {
-                return $zone;
+                return $this->scope->allowsZone($zone->id, $zone->districtId) ? $zone : null;
             }
         }
 
@@ -190,7 +199,25 @@ final class AssetService
     {
         foreach ($this->provider->panchayats() as $panchayat) {
             if ($panchayat->id === $id) {
-                return $panchayat;
+                // Both the panchayat- and zone-level scope must allow it: a District
+                // Officer must not reach a panchayat in another district, which
+                // allowsPanchayat() alone (null panchayat scope) would permit.
+                $allowed = $this->scope->allowsPanchayat($panchayat->id)
+                    && $this->scope->allowsZone($panchayat->zoneId, $this->zoneDistrictId($panchayat->zoneId));
+
+                return $allowed ? $panchayat : null;
+            }
+        }
+
+        return null;
+    }
+
+    /** The district a zone belongs to, read unscoped (used to scope-check a panchayat). */
+    private function zoneDistrictId(string $zoneId): ?string
+    {
+        foreach ($this->provider->zones() as $zone) {
+            if ($zone->id === $zoneId) {
+                return $zone->districtId;
             }
         }
 

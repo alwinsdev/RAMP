@@ -5,6 +5,11 @@
 
     RewriteEngine On
 
+    # Force HTTPS (works behind Hostinger's proxy via X-Forwarded-Proto too).
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -22,4 +27,47 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# Hardening
+# ---------------------------------------------------------------------------
+
+# Never list a directory, and hide the Apache version in error pages.
+Options -Indexes
+ServerSignature Off
+
+# Block access to dotfiles (.env, .git, .htaccess, ...) should any end up here.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Block source/config files that must never be served, even if misplaced under public.
+<FilesMatch "(?i)\.(env|ini|log|sh|bak|sql|lock|md|yml|yaml|dist)$">
+    Require all denied
+</FilesMatch>
+
+# Static-asset security headers (PHP responses get these from the SecurityHeaders
+# middleware; this covers files Apache serves directly, e.g. JS/CSS/images).
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    # Don't leak the framework / PHP version via static responses.
+    Header unset X-Powered-By
+    Header unset Server
+</IfModule>
+
+# Compression + long-lived caching for the built Vite assets (fingerprinted filenames).
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
 </IfModule>

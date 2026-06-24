@@ -1,0 +1,37 @@
+# =============================================================================
+# RAMP — ROOT .htaccess  (use ONLY when the whole app sits inside public_html
+# and you cannot point the domain's document root at the /public folder).
+#
+# Preferred Hostinger setup: in hPanel set the domain document root to
+#   .../public   — then this file is unused and public/.htaccess does the work.
+#
+# If you can't change the document root, upload the entire project into
+# public_html (so this file lands at the web root). It forwards every request
+# into public/ and forbids direct access to the application internals.
+# =============================================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Force HTTPS (Hostinger terminates TLS at a proxy → check X-Forwarded-Proto).
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Forbid direct access to sensitive top-level files...
+    RewriteRule ^(\.env.*|composer\.(json|lock)|package(-lock)?\.json|artisan|phpunit\.xml|vite\.config\.js|README\.md) - [F,L]
+
+    # ...and to every non-public application directory.
+    RewriteRule ^(app|bootstrap|config|database|docs|resources|routes|storage|tests|tools|vendor|node_modules|\.claude|\.git)(/|$) - [F,L]
+
+    # Everything else is served from the public/ front controller.
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Belt-and-suspenders: deny dotfiles even if mod_rewrite is unavailable.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+Options -Indexes
+ServerSignature Off

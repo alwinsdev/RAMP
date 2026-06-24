@@ -69,7 +69,7 @@ final class AuthTest extends TestCase
     {
         $this->actingAsRole('district_officer'); // Salem
 
-        $assets = app(AssetService::class)->list(new AssetFilter());
+        $assets = app(AssetService::class)->list(new AssetFilter);
         $this->assertNotEmpty($assets);
         foreach ($assets as $asset) {
             $this->assertSame('DIST-SALEM', $asset->districtId);
@@ -88,7 +88,7 @@ final class AuthTest extends TestCase
     {
         $this->actingAsRole('panchayat_officer'); // Erumapalayam (PAN-ERU)
 
-        $assets = app(AssetService::class)->list(new AssetFilter());
+        $assets = app(AssetService::class)->list(new AssetFilter);
         $this->assertNotEmpty($assets);
         foreach ($assets as $asset) {
             $this->assertSame('PAN-ERU', $asset->panchayatId);
@@ -108,5 +108,37 @@ final class AuthTest extends TestCase
         $this->actingAsRole('district_officer');
         $this->assertNull(app(AssetService::class)->detail($erode->id));
         $this->get('/assets/'.$erode->id)->assertRedirect('/assets');
+    }
+
+    public function test_officer_cannot_drill_into_a_hierarchy_node_outside_their_scope(): void
+    {
+        // Salem district officer hand-editing the route param to reach Erode's
+        // district/zone/panchayat drill-downs must be redirected, not shown the
+        // out-of-scope node's name (RBAC / IDOR — the scope-aware single-node lookups).
+        $this->actingAsRole('district_officer'); // DIST-SALEM
+
+        $this->get('/districts/DIST-ERODE/zones')->assertRedirect('/districts');
+        $this->get('/zones/ZONE-ERD-N/panchayats')->assertRedirect('/districts');
+        $this->get('/panchayats/PAN-CHI/categories')->assertRedirect('/districts'); // PAN-CHI ∈ Erode
+
+        // The officer's own district path still works.
+        $this->get('/districts/DIST-SALEM/zones')->assertOk()->assertSee('North Zone');
+
+        // Scope-aware lookups return null for the out-of-scope nodes.
+        $assets = app(AssetService::class);
+        $this->assertNull($assets->districtById('DIST-ERODE'));
+        $this->assertNull($assets->zoneById('ZONE-ERD-N'));
+        $this->assertNull($assets->panchayatById('PAN-CHI'));
+        $this->assertNotNull($assets->districtById('DIST-SALEM'));
+    }
+
+    public function test_panchayat_officer_cannot_drill_into_a_sibling_panchayat(): void
+    {
+        // PAN-ERU officer must not reach PAN-AMM (same zone, different panchayat).
+        $this->actingAsRole('panchayat_officer'); // PAN-ERU
+
+        $this->get('/panchayats/PAN-AMM/categories')->assertRedirect('/districts');
+        $this->assertNull(app(AssetService::class)->panchayatById('PAN-AMM'));
+        $this->assertNotNull(app(AssetService::class)->panchayatById('PAN-ERU'));
     }
 }
