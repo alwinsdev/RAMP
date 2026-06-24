@@ -5,83 +5,65 @@ import './bootstrap';
 import ApexCharts from 'apexcharts';
 window.ApexCharts = ApexCharts;
 
-// Marker clustering for the Asset Intelligence Map.
-import { MarkerClusterer } from '@googlemaps/markerclusterer';
+// Maps: Leaflet + OpenStreetMap (free, no API key, no billing, no quota).
+// markercluster = clustering on the Asset Intelligence Map; heat = the heatmap mode.
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import 'leaflet.heat';
+window.L = L;
 
-/**
- * Google Maps JS API loader — a single shared promise so the script is injected
- * at most once per page. Resolves with google.maps; rejects if the script fails
- * (e.g. an invalid/blocked key) so callers can fall back gracefully.
- */
-window.loadGoogleMaps = (key) => {
-    if (window.__gmapsPromise) {
-        return window.__gmapsPromise;
-    }
+// OpenStreetMap raster tiles + attribution (required by the OSM tile usage policy).
+const OSM_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const OSM_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const osmLayer = () => L.tileLayer(OSM_TILES, { maxZoom: 19, attribution: OSM_ATTRIB });
 
-    window.__gmapsPromise = new Promise((resolve, reject) => {
-        if (window.google && window.google.maps && window.google.maps.Map) {
-            resolve(window.google.maps);
-            return;
-        }
-        if (!key) {
-            reject(new Error('Missing Google Maps API key'));
-            return;
-        }
-
-        // Google calls this when the key is invalid or the referrer isn't allowed
-        // (e.g. 127.0.0.1 not whitelisted). Surface a graceful fallback instead of
-        // a blank canvas. The components listen for this event and show the fallback.
-        window.gm_authFailure = () => {
-            window.__gmapsAuthFailed = true;
-            window.dispatchEvent(new CustomEvent('gmaps-auth-failure'));
-        };
-
-        // With loading=async the script's onload can fire BEFORE google.maps.Map is
-        // ready — creating a map then renders blank. The official callback= param
-        // resolves only once the API is fully initialised, so we always wait for it.
-        window.__gmapsReady = () => resolve(window.google.maps);
-
-        const script = document.createElement('script');
-        // visualization library is required for the heatmap layer on the intelligence map.
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=visualization&loading=async&callback=__gmapsReady`;
-        script.async = true;
-        script.onerror = () => reject(new Error('Failed to load Google Maps'));
-        document.head.appendChild(script);
-    });
-
-    return window.__gmapsPromise;
-};
+// A coloured SVG map pin as a Leaflet divIcon (no external image assets to 404 on).
+const pinIcon = (color = '#1A73E8') => L.divIcon({
+    className: 'ramp-pin',
+    html: `<svg width="30" height="40" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.37 0 0 5.37 0 12c0 8.5 12 20 12 20s12-11.5 12-20C24 5.37 18.63 0 12 0z" fill="${color}"/><circle cx="12" cy="12" r="4.5" fill="#fff"/></svg>`,
+    iconSize: [30, 40],
+    iconAnchor: [15, 40],
+    popupAnchor: [0, -36],
+});
 
 document.addEventListener('alpine:init', () => {
     /**
-     * Asset location map. cfg = { lat, lng, key, label }.
-     * Sets `failed = true` when the map can't load so the Blade shows a fallback.
+     * Asset location map. cfg = { lat, lng, label, interactive, color }.
+     * Sets `failed = true` if the map can't initialise so the Blade shows a fallback.
      */
     window.Alpine.data('assetMap', (cfg) => ({
         failed: false,
-        async init() {
-            if (window.__gmapsAuthFailed) { this.failed = true; return; }
-            window.addEventListener('gmaps-auth-failure', () => { this.failed = true; });
+        _map: null,
+        init() {
             try {
-                await window.loadGoogleMaps(cfg.key);
-                const position = { lat: Number(cfg.lat), lng: Number(cfg.lng) };
-                // interactive === false -> a read-only preview (no controls, no gestures).
+                const lat = Number(cfg.lat);
+                const lng = Number(cfg.lng);
                 const interactive = cfg.interactive !== false;
-                const map = new google.maps.Map(this.$refs.map, {
-                    center: position,
+                const map = L.map(this.$refs.map, {
+                    center: [lat, lng],
                     zoom: interactive ? 15 : 14,
-                    mapTypeControl: false,
-                    streetViewControl: false,
-                    fullscreenControl: interactive,
                     zoomControl: interactive,
-                    disableDefaultUI: ! interactive,
-                    gestureHandling: interactive ? 'auto' : 'none',
-                    keyboardShortcuts: interactive,
+                    dragging: interactive,
+                    scrollWheelZoom: interactive,
+                    doubleClickZoom: interactive,
+                    boxZoom: interactive,
+                    keyboard: interactive,
+                    touchZoom: interactive,
                 });
-                new google.maps.Marker({ position, map, title: cfg.label });
+                osmLayer().addTo(map);
+                L.marker([lat, lng], { icon: pinIcon(cfg.color), title: cfg.label, keyboard: false }).addTo(map);
+                this._map = map;
+                // Containers that animate / were SPA-swapped can mis-measure; re-measure once laid out.
+                requestAnimationFrame(() => map.invalidateSize());
             } catch (e) {
                 this.failed = true;
             }
+        },
+        destroy() {
+            this._map?.remove();
         },
     }));
 
@@ -152,40 +134,33 @@ document.addEventListener('alpine:init', () => {
     }));
 
     /**
-     * Asset Intelligence Map — the flagship visualization.
-     * cfg = { key, mapId, embedded, markers: [{id,name,number,category,panchayat,status,color,year,remaining,lat,lng}] }
-     * Renders colour-coded markers with clustering, a heatmap mode, info windows,
-     * and auto-fit to the (already role-scoped, already filtered) marker set.
+     * Asset Intelligence Map — the flagship visualization (Leaflet + OpenStreetMap).
+     * cfg = { mapId, embedded, markers: [{id,name,number,category,panchayat,status,color,year,remaining,lat,lng}] }
+     * Renders colour-coded markers with clustering, a heatmap mode, popups, and
+     * auto-fit to the (already role-scoped, already filtered) marker set.
      */
     window.Alpine.data('assetIntelMap', (cfg) => ({
         failed: false,
         heatmapOn: false,
         _map: null,
-        _info: null,
-        _markers: [],
         _cluster: null,
         _heat: null,
         _data: cfg.markers || [],
 
-        async init() {
-            if (!cfg.key || window.__gmapsAuthFailed) { this.failed = true; return; }
-            window.addEventListener('gmaps-auth-failure', () => { this.failed = true; });
+        init() {
             try {
-                await window.loadGoogleMaps(cfg.key);
+                const map = L.map(this.$refs.map, {
+                    center: [11.5, 78.1],
+                    zoom: 8,
+                    scrollWheelZoom: true,
+                });
+                osmLayer().addTo(map);
+                this._map = map;
+                requestAnimationFrame(() => map.invalidateSize());
+                this.draw(this._data);
             } catch (e) {
                 this.failed = true;
-                return;
             }
-
-            this._map = new google.maps.Map(this.$refs.map, {
-                center: { lat: 11.5, lng: 78.1 },
-                zoom: 8,
-                mapTypeControl: false,
-                streetViewControl: false,
-                fullscreenControl: ! cfg.embedded,
-            });
-            this._info = new google.maps.InfoWindow();
-            this.draw(this._data);
         },
 
         // Live filter updates from the Livewire screen (matched by mapId), bound in Blade.
@@ -197,51 +172,40 @@ document.addEventListener('alpine:init', () => {
         },
 
         draw(data) {
-            // Clear previous layers.
-            if (this._cluster) { this._cluster.clearMarkers(); this._cluster = null; }
-            this._markers.forEach((m) => m.setMap(null));
-            this._markers = [];
-            if (this._heat) { this._heat.setMap(null); this._heat = null; }
+            if (!this._map) return;
 
-            this._markers = data.map((d) => {
-                const marker = new google.maps.Marker({
-                    position: { lat: Number(d.lat), lng: Number(d.lng) },
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 7,
-                        fillColor: d.color,
-                        fillOpacity: 0.95,
-                        strokeColor: '#ffffff',
-                        strokeWeight: 1.5,
-                    },
-                    title: d.name,
-                });
-                marker.addListener('click', () => {
-                    this._info.setContent(this.popup(d));
-                    this._info.open(this._map, marker);
-                });
-                return marker;
-            });
+            // Clear previous layers.
+            if (this._cluster) { this._map.removeLayer(this._cluster); this._cluster = null; }
+            if (this._heat) { this._map.removeLayer(this._heat); this._heat = null; }
 
             if (this.heatmapOn) {
-                this._heat = new google.maps.visualization.HeatmapLayer({
-                    data: data.map((d) => new google.maps.LatLng(Number(d.lat), Number(d.lng))),
-                    map: this._map,
-                    radius: 32,
-                    opacity: 0.7,
-                });
+                this._heat = L.heatLayer(
+                    data.map((d) => [Number(d.lat), Number(d.lng), 0.8]),
+                    { radius: 28, blur: 20, maxZoom: 17 },
+                );
+                this._map.addLayer(this._heat);
             } else {
-                this._cluster = new MarkerClusterer({ map: this._map, markers: this._markers });
+                this._cluster = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 50 });
+                data.forEach((d) => {
+                    const marker = L.circleMarker([Number(d.lat), Number(d.lng)], {
+                        radius: 7,
+                        fillColor: d.color,
+                        fillOpacity: 0.95,
+                        color: '#ffffff',
+                        weight: 1.5,
+                    });
+                    marker.bindPopup(this.popup(d), { minWidth: 220 });
+                    this._cluster.addLayer(marker);
+                });
+                this._map.addLayer(this._cluster);
             }
 
             // Auto-focus: fit the map to the current (filtered) markers.
             if (data.length) {
-                const bounds = new google.maps.LatLngBounds();
-                data.forEach((d) => bounds.extend({ lat: Number(d.lat), lng: Number(d.lng) }));
-                this._map.fitBounds(bounds);
-                google.maps.event.addListenerOnce(this._map, 'idle', () => {
-                    if (this._map.getZoom() > 15) this._map.setZoom(15);
-                });
+                this._map.fitBounds(
+                    L.latLngBounds(data.map((d) => [Number(d.lat), Number(d.lng)])),
+                    { padding: [30, 30], maxZoom: 15 },
+                );
             }
         },
 
@@ -270,8 +234,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         destroy() {
-            if (this._cluster) this._cluster.clearMarkers();
-            if (this._heat) this._heat.setMap(null);
+            this._map?.remove();
         },
     }));
 });

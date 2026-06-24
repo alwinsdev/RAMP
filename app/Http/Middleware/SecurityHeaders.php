@@ -53,18 +53,20 @@ final class SecurityHeaders
 
     private function contentSecurityPolicy(): string
     {
-        $maps = 'https://maps.googleapis.com https://maps.gstatic.com';
-        $google = 'https://*.googleapis.com https://*.gstatic.com https://maps.google.com https://*.ggpht.com';
+        // Maps use Leaflet (bundled, served from 'self') with OpenStreetMap raster
+        // tiles loaded as images from the *.tile.openstreetmap.org hosts. No API key,
+        // no third-party script, no cross-origin fetch.
+        $osmTiles = 'https://*.tile.openstreetmap.org https://tile.openstreetmap.org';
 
         return implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' {$maps}",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
             "style-src 'self' 'unsafe-inline' https://fonts.bunny.net",
-            "font-src 'self' https://fonts.bunny.net",
-            "img-src 'self' data: blob: {$google}",
-            "connect-src 'self' {$maps}",
+            "font-src 'self' data: https://fonts.bunny.net",
+            "img-src 'self' data: blob: {$osmTiles}",
+            "connect-src 'self'",
             "worker-src 'self' blob:",
-            "frame-src 'self' https://www.google.com",
+            "frame-src 'self'",
             "object-src 'none'",
             "base-uri 'self'",
             "form-action 'self'",
