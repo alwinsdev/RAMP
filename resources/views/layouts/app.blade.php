@@ -11,70 +11,59 @@
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicon-16.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/apple-touch-icon.png') }}">
 
-    {{-- Inter — the brand typeface (privacy-friendly, Laravel's default font host) --}}
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800&display=swap" rel="stylesheet">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen text-ink">
-    {{-- App header — persistent, sticky, frosted (UI_RULES LR-01) --}}
-    <header class="sticky top-0 z-40 border-b border-hairline/80 bg-surface/80 backdrop-blur-md" style="box-shadow: var(--shadow-header);">
-        <div class="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-            <a href="{{ url('/') }}" wire:navigate class="group flex items-center transition group-hover:opacity-90">
-                {{-- Brand logo image. Falls back to the text wordmark if the file isn't present yet. --}}
-                <img src="{{ asset('images/ramp-logo.png') }}" alt="RAMP — Rural Asset Management Platform"
-                     class="h-11 w-auto sm:h-12" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <span class="hidden items-center gap-3" aria-hidden="true">
-                    <span class="grid h-9 w-9 place-items-center rounded-xl text-white shadow-sm" style="background-image: linear-gradient(140deg, var(--color-brand), var(--color-brand-strong));">
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6" /></svg>
-                    </span>
-                    <span class="flex flex-col leading-tight">
-                        <span class="text-[15px] font-bold tracking-tight text-ink">RAMP</span>
-                        <span class="text-[11px] font-medium text-ink-muted">Rural Asset Management Platform</span>
-                    </span>
-                </span>
-            </a>
+<body class="min-h-screen text-ink"
+      x-data="{
+          collapsed: localStorage.getItem('ramp_collapsed') === '1',
+          sidebarOpen: false,
+          toggleCollapsed() { this.collapsed = !this.collapsed; localStorage.setItem('ramp_collapsed', this.collapsed ? '1' : '0'); }
+      }">
 
-            <span class="hidden items-center gap-1.5 rounded-full border border-hairline bg-surface-soft px-3 py-1 text-[11px] font-semibold text-ink-soft sm:inline-flex">
-                <span class="h-1.5 w-1.5 rounded-full" style="background: var(--color-status-healthy);"></span>
-                POC · Mock Data
-            </span>
-        </div>
-    </header>
+    {{-- Mobile overlay --}}
+    <div x-show="sidebarOpen" x-cloak x-transition.opacity @click="sidebarOpen = false"
+         class="fixed inset-0 z-40 bg-ink/40 lg:hidden"></div>
 
-    {{-- Breadcrumb bar — appears on every screen below the Dashboard (UI_RULES LR-02) --}}
-    @isset($breadcrumbs)
-        <div class="border-b border-hairline/70 bg-surface/60">
-            <div class="mx-auto max-w-[1280px] px-4 py-2.5 sm:px-6 lg:px-8">
-                {{ $breadcrumbs }}
-            </div>
-        </div>
-    @endisset
+    {{-- Sidebar --}}
+    <aside class="fixed inset-y-0 left-0 z-50 border-r border-hairline bg-surface transition-all duration-200 ease-out"
+           :class="[ collapsed ? 'w-16' : 'w-56', sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0' ]">
+        <x-app.sidebar />
+    </aside>
 
-    <main class="mx-auto max-w-[1280px] px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
-        @if (session('notice'))
-            <div class="mb-6 flex items-center gap-2.5 rounded-xl border border-hairline bg-surface px-4 py-3 text-sm text-ink-soft shadow-[var(--shadow-card)]">
-                <svg class="h-4 w-4 shrink-0 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                {{ session('notice') }}
-            </div>
-        @endif
+    {{-- Main column --}}
+    <div class="flex min-h-screen flex-col transition-all duration-200 ease-out" :class="collapsed ? 'lg:pl-16' : 'lg:pl-56'">
+        <x-app.topbar />
 
-        {{ $slot }}
-    </main>
+        <main class="relative mx-auto w-full flex-1 px-4 py-7 transition-all duration-200 ease-out sm:px-6 sm:py-8 lg:px-8"
+              :class="collapsed ? 'max-w-[1600px]' : 'max-w-[1320px]'">
+            {{-- Page-level Back button — top-right of every page except Home --}}
+            @unless (request()->routeIs('home'))
+                <button type="button" @click="window.history.back()"
+                        class="absolute right-4 top-6 z-10 inline-flex h-9 items-center gap-1.5 rounded-lg border border-hairline bg-surface px-2.5 text-sm font-medium text-ink-soft shadow-[var(--shadow-card)] transition hover:border-brand/30 hover:text-brand sm:right-6 sm:top-7 lg:right-8"
+                        aria-label="Go back" title="Back to previous page">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    <span class="hidden sm:inline">Back</span>
+                </button>
+            @endunless
 
-    <footer class="mx-auto max-w-[1280px] px-4 pb-10 sm:px-6 lg:px-8">
-        <div class="flex flex-col gap-3 border-t border-hairline/70 pt-5 text-[11px] font-medium text-ink-muted sm:flex-row sm:items-center sm:justify-between">
-            <p>
-                Developed by <a href="https://redmindtechnologies.com" target="_blank" class="font-bold hover:underline"><span style="color: #d93025;">R</span><span class="text-ink">ed</span><span style="color: #d93025;">M</span><span class="text-ink">ind Technologies</span></a>
-            </p>
-            <p>
-                Support: <a href="mailto:support@redmindtechnologies.com" class="hover:text-brand transition">support@redmindtechnologies.com</a>
-            </p>
-            <p>
-                &copy; {{ date('Y') }} ARD Agency &middot; Version 1.0.0
-            </p>
-        </div>
-    </footer>
+            @if (session('notice'))
+                <div class="mb-6 flex items-center gap-2.5 rounded-xl border border-hairline bg-surface px-4 py-3 text-sm text-ink-soft shadow-[var(--shadow-card)]">
+                    <svg class="h-4 w-4 shrink-0 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                    {{ session('notice') }}
+                </div>
+            @endif
+
+            {{ $slot }}
+        </main>
+
+        {{-- Footer — sits at the bottom of the page in normal flow (not fixed) --}}
+        <footer class="mx-auto w-full px-4 transition-all duration-200 ease-out sm:px-6 lg:px-8"
+                :class="collapsed ? 'max-w-[1600px]' : 'max-w-[1320px]'">
+            <x-app.footer />
+        </footer>
+    </div>
 </body>
 </html>

@@ -9,12 +9,12 @@
 
     <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div class="flex flex-col gap-1">
-            <span class="eyebrow">Lifecycle · {{ $asset->assetName }}</span>
-            <h1 class="text-2xl font-bold tracking-tight text-ink sm:text-3xl">Lifecycle Monitoring</h1>
+            <span class="eyebrow">Asset health · {{ $asset->assetName }}</span>
+            <h1 class="text-2xl font-bold tracking-tight text-ink sm:text-3xl">Asset Health</h1>
         </div>
         <a href="{{ route('assets.show', ['asset' => $asset->id]) }}" wire:navigate class="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-brand hover:text-brand-hover">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
-            Back to detail
+            Back to information
         </a>
     </div>
 
@@ -38,13 +38,18 @@
 
         {{-- Figures --}}
         <x-card class="lg:col-span-3">
-            <span class="eyebrow">Lifecycle figures</span>
+            <span class="eyebrow">Asset health figures</span>
             <dl class="mt-3 grid grid-cols-2 gap-x-6">
                 <x-detail-row label="Construction Year" :value="$asset->constructionYear ? (string) $asset->constructionYear : '—'" />
-                <x-detail-row label="Expected Life" :value="$asset->expectedLife ? $asset->expectedLife.' yr' : '—'" />
-                <x-detail-row label="Current Age" :value="is_null($lc?->currentAge) ? '—' : $lc->currentAge.' yr'" />
+                <x-detail-row label="Expected Life" :value="$expectedLife.' yr'" />
+                <x-detail-row label="Asset Age" :value="is_null($lc?->currentAge) ? '—' : $lc->currentAge.' yr'" />
                 <x-detail-row label="Remaining Life" :value="is_null($lc?->remainingLife) ? '—' : $lc->remainingLife.' yr'" />
             </dl>
+
+            {{-- Lifecycle progress bar (X / 25 Years Used) --}}
+            <div class="mt-4 border-t border-hairline-soft pt-4">
+                <x-lifecycle-progress :asset="$asset" />
+            </div>
 
             <div class="mt-5 rounded-lg border border-hairline-soft bg-surface-soft p-4">
                 <p class="text-xs font-semibold uppercase tracking-wide text-ink-muted">How status is derived</p>

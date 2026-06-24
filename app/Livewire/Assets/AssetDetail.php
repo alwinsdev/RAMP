@@ -7,15 +7,16 @@ namespace App\Livewire\Assets;
 use App\Services\AssetService;
 use App\Support\Breadcrumb\BreadcrumbBuilder;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * Asset Detail (SCR-06) — the leaf record consolidating administrative, asset,
- * location, lifecycle, and media information. An unknown asset id degrades to the
- * Asset List (BR-NV-09). The dedicated Photos / Location (Google Maps) / Lifecycle
- * sub-views arrive in Sprint 2; this screen shows each group inline.
+ * Asset Information (SCR-06) — the leaf record consolidating asset, administrative,
+ * asset-health, location (with an embedded map preview), and photo information.
+ * An unknown / out-of-scope asset id degrades to the Asset List (BR-NV-09, RBAC).
  */
 #[Layout('layouts.app')]
+#[Title('Asset Information — RAMP')]
 final class AssetDetail extends Component
 {
     public string $assetId = '';

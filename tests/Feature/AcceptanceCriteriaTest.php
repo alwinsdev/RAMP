@@ -17,12 +17,12 @@ final class AcceptanceCriteriaTest extends TestCase
     /** AC-NAV-02: the breadcrumb at the Asset List reflects District → Zone → Panchayat → Category. */
     public function test_asset_list_breadcrumb_reflects_full_context_path(): void
     {
-        $this->get('/assets?panchayatId=PAN-ERU&categoryId=CAT-EDU')
+        $this->get('/assets?panchayatId=PAN-ERU&categoryId=CAT-PRI')
             ->assertOk()
             ->assertSee('Salem')
             ->assertSee('North Zone')
             ->assertSee('Erumapalayam Panchayat')
-            ->assertSee('Educational Assets');
+            ->assertSee('Primary Schools');
     }
 
     /** AC-NAV-01: the full drill-down chain is navigable purely via on-screen links. */
@@ -40,10 +40,11 @@ final class AcceptanceCriteriaTest extends TestCase
         // Veerapandi Panchayat (PAN-VEE) has no assets in the seed.
         $this->get('/panchayats/PAN-VEE/categories')
             ->assertOk()
-            ->assertSee('Educational Assets')
-            ->assertSee('Healthcare Assets')
-            ->assertSee('Water Infrastructure')
-            ->assertSee('Public Infrastructure');
+            ->assertSee('Primary Schools')
+            ->assertSee('Toilet Buildings')
+            ->assertSee('Ration Shops')
+            ->assertSee('Function Halls')
+            ->assertSee('Bore Wells');
     }
 
     /** AC-ASST-04: from the detail the user can reach Photos, Location and Lifecycle. */

@@ -37,7 +37,7 @@ final readonly class AssetData
         public ?float $latitude = null,
         public ?float $longitude = null,
         public ?int $constructionYear = null,
-        public ?int $expectedLife = null,
+        public ?string $createdAt = null,   // synthetic record-creation date (for "Recent Assets")
         public array $photos = [],
         public ?LifecycleResult $lifecycle = null,
     ) {
@@ -74,7 +74,7 @@ final readonly class AssetData
             latitude: isset($row['latitude']) ? (float) $row['latitude'] : null,
             longitude: isset($row['longitude']) ? (float) $row['longitude'] : null,
             constructionYear: isset($row['construction_year']) ? (int) $row['construction_year'] : null,
-            expectedLife: isset($row['expected_life']) ? (int) $row['expected_life'] : null,
+            createdAt: isset($row['created_at']) ? (string) $row['created_at'] : null,
             photos: array_values($photos),
         );
     }
@@ -103,7 +103,7 @@ final readonly class AssetData
             latitude: $this->latitude,
             longitude: $this->longitude,
             constructionYear: $this->constructionYear,
-            expectedLife: $this->expectedLife,
+            createdAt: $this->createdAt,
             photos: $this->photos,
             lifecycle: $lifecycle,
         );

@@ -17,65 +17,65 @@ final class AssetListComponentTest extends TestCase
     public function test_renders_all_assets_by_default(): void
     {
         Livewire::test(AssetList::class)
-            ->assertSee('EDU-0001')
-            ->assertSee('WAT-0002')
-            ->assertSee('PUB-0002');
+            ->assertSee('PRI-0001')
+            ->assertSee('BOR-0001')
+            ->assertSee('FUN-0001');
     }
 
     public function test_live_search_filters_by_name(): void
     {
         Livewire::test(AssetList::class)
             ->set('q', 'bore')
-            ->assertSee('WAT-0002')       // Ammapet Bore Well #3
-            ->assertDontSee('EDU-0001');
+            ->assertSee('BOR-0001')       // Public Bore Well #3, Ammapet
+            ->assertDontSee('PRI-0001');
     }
 
     public function test_search_is_case_insensitive_and_trimmed(): void
     {
         Livewire::test(AssetList::class)
             ->set('q', '  SCHOOL ')
-            ->assertSee('EDU-0001')
-            ->assertSee('EDU-0003')
-            ->assertDontSee('WAT-0002');
+            ->assertSee('PRI-0001')
+            ->assertSee('PRI-0002')
+            ->assertDontSee('BOR-0001');
     }
 
     public function test_status_filter_uses_computed_status(): void
     {
         Livewire::test(AssetList::class)
             ->set('status', 'Unknown')
-            ->assertSee('PUB-0002')
-            ->assertDontSee('EDU-0001');
+            ->assertSee('FUN-0001')
+            ->assertDontSee('PRI-0001');
     }
 
     public function test_context_filters_combine_with_and(): void
     {
         Livewire::test(AssetList::class)
             ->set('panchayatId', 'PAN-ERU')
-            ->set('categoryId', 'CAT-EDU')
-            ->assertSee('EDU-0001')
-            ->assertDontSee('WAT-0002');
+            ->set('categoryId', 'CAT-PRI')
+            ->assertSee('PRI-0001')
+            ->assertDontSee('BOR-0001');
     }
 
     public function test_reset_clears_all_filters(): void
     {
         Livewire::test(AssetList::class)
-            ->set('categoryId', 'CAT-EDU')
+            ->set('categoryId', 'CAT-NUR')
             ->set('q', 'nursery')
-            ->assertDontSee('PUB-0001')
+            ->assertDontSee('PAN-0001')
             ->call('resetFilters')
             ->assertSet('categoryId', '')
             ->assertSet('q', '')
-            ->assertSee('PUB-0001');
+            ->assertSee('PAN-0001');
     }
 
     public function test_remove_single_filter_chip(): void
     {
         Livewire::test(AssetList::class)
-            ->set('categoryId', 'CAT-WAT')
-            ->assertDontSee('EDU-0001')
+            ->set('categoryId', 'CAT-OHT')
+            ->assertDontSee('PRI-0001')
             ->call('removeFilter', 'categoryId')
             ->assertSet('categoryId', '')
-            ->assertSee('EDU-0001');
+            ->assertSee('PRI-0001');
     }
 
     public function test_no_results_shows_empty_state(): void

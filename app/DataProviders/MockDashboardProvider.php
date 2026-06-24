@@ -7,6 +7,7 @@ namespace App\DataProviders;
 use App\Contracts\DashboardDataProvider;
 use App\DataObjects\AssetData;
 use App\DataObjects\CategoryData;
+use App\DataObjects\DistrictData;
 use App\DataObjects\PanchayatData;
 use App\DataObjects\ZoneData;
 use App\DataProviders\Concerns\ReadsMockJson;
@@ -26,6 +27,15 @@ final class MockDashboardProvider implements DashboardDataProvider
         return array_map(
             static fn (array $row): AssetData => AssetData::fromArray($row),
             $this->readCollection('assets'),
+        );
+    }
+
+    /** @return array<int, DistrictData> */
+    public function districts(): array
+    {
+        return array_map(
+            static fn (array $row): DistrictData => DistrictData::fromArray($row),
+            $this->readCollection('districts'),
         );
     }
 

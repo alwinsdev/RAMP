@@ -20,7 +20,10 @@
                     :title="$zone->name"
                     :count="$counts[$zone->id] ?? 0"
                     :href="route('panchayats', ['zone' => $zone->id])"
-                />
+                    accent="#0D9488"
+                >
+                    <x-slot:icon><x-nav-icon name="zones" /></x-slot:icon>
+                </x-node-card>
             @endforeach
         </div>
     @endif

@@ -57,6 +57,9 @@ return [
     | See BUSINESS_RULES BR-LC-* / BR-HL-*.
     */
     'lifecycle' => [
+        // Every asset uses the same expected life (CR-06). Only construction_year is
+        // a stored input; status is derived from it against this fixed life.
+        'expected_life' => 25,
         'near_expiry_years' => 5,
     ],
 

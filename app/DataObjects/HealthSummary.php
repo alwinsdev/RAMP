@@ -56,4 +56,20 @@ final readonly class HealthSummary
 
         return round($this->count($status) / $base * 100, 1);
     }
+
+    /**
+     * A single 0–100 "Asset Health Score" for at-a-glance reporting (CR-05).
+     * Weighted over the rated base (Unknown excluded): Healthy = full weight,
+     * Near Expiry = half, Expired = none. 0 when nothing is rated.
+     */
+    public function healthScore(): int
+    {
+        $base = $this->healthCountedTotal();
+
+        if ($base === 0) {
+            return 0;
+        }
+
+        return (int) round(($this->healthy + 0.5 * $this->nearExpiry) / $base * 100);
+    }
 }

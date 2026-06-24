@@ -8,61 +8,110 @@ use App\Contracts\DashboardDataProvider;
 use App\DataObjects\AssetData;
 use App\DataObjects\Breakdown;
 use App\DataObjects\DashboardSummary;
+use App\DataObjects\DistrictSummary;
 use App\DataObjects\HealthSummary;
 use App\Enums\LifecycleStatus;
+use App\Support\Auth\Scope;
 use App\Support\Lifecycle\LifecycleCalculator;
 
 /**
- * Computes the entire dashboard payload from the live dataset. This is the single
- * aggregation implementation (BR-PR-02); no counts are hard-coded anywhere
- * (BR-DI-05). Lifecycle status used in the health summary comes from the shared
- * LifecycleCalculator (BR-LC-05) — never a stored value.
+ * Computes the entire dashboard payload from the live, role-scoped dataset. This is
+ * the single aggregation implementation (BR-PR-02); no counts are hard-coded
+ * (BR-DI-05). Lifecycle status comes from the shared LifecycleCalculator (BR-LC-05)
+ * — never a stored value. Every read is filtered by the user's Scope (RBAC).
  *
  * Reconciliation guarantees (validated by AggregationTest):
- *  - zone-wise and panchayat-wise breakdown sums == totalAssets
+ *  - district-card asset counts sum to totalAssets
+ *  - category distribution counts sum to totalAssets
  *  - Healthy + Near Expiry + Expired + Unknown == totalAssets
- *  - sum of category breakdown counts == totalAssets
  */
 final class DashboardService
 {
     public function __construct(
         private readonly DashboardDataProvider $provider,
         private readonly LifecycleCalculator $lifecycle,
+        private readonly Scope $scope,
     ) {
     }
 
     public function summary(): DashboardSummary
     {
-        $assets = $this->provider->allAssets();
-        $zones = $this->provider->zones();
-        $panchayats = $this->provider->panchayats();
+        // Apply the role-based scope so each officer only sees their area (CR-01 #6).
+        $assets = array_values(array_filter($this->provider->allAssets(), fn (AssetData $a): bool => $this->scope->allowsAsset($a)));
+        $districts = array_values(array_filter($this->provider->districts(), fn ($d): bool => $this->scope->allowsDistrict($d->id)));
+        $zones = array_values(array_filter($this->provider->zones(), fn ($z): bool => $this->scope->allowsZone($z->id, $z->districtId)));
+        $allowedZoneIds = array_map(static fn ($z): string => $z->id, $zones);
+        $panchayats = array_values(array_filter(
+            $this->provider->panchayats(),
+            fn ($p): bool => $this->scope->allowsPanchayat($p->id) && in_array($p->zoneId, $allowedZoneIds, true),
+        ));
         $categories = $this->provider->categories();
 
         return new DashboardSummary(
             totalAssets: count($assets),
+            totalDistricts: count($districts),
             totalCategories: count($categories),
             totalZones: count($zones),
             totalPanchayats: count($panchayats),
             health: $this->healthSummary($assets),
-            zoneBreakdown: $this->breakdown(
-                $assets,
-                labels: $this->labelMap($zones),
-                keyOf: static fn (AssetData $a): ?string => $a->zoneId,
-                filterKey: 'zoneId',
-            ),
-            panchayatBreakdown: $this->breakdown(
-                $assets,
-                labels: $this->labelMap($panchayats),
-                keyOf: static fn (AssetData $a): ?string => $a->panchayatId,
-                filterKey: 'panchayatId',
-            ),
-            categoryBreakdown: $this->breakdown(
+            districtCards: $this->districtCards($districts, $zones, $panchayats, $assets),
+            categoryDistribution: $this->breakdown(
                 $assets,
                 labels: $this->labelMap($categories),
                 keyOf: static fn (AssetData $a): ?string => $a->categoryId,
                 filterKey: 'categoryId',
                 includeZero: true, // categories with zero assets are still shown (BR-CT-04)
             ),
+            recentAssets: $this->recentAssets($assets),
+        );
+    }
+
+    /**
+     * One summary card per district: zone/panchayat/asset counts + health, sorted
+     * by asset count desc. Drills into the district's zones (hierarchy-first, CR-04).
+     *
+     * @param  array<int, \App\DataObjects\DistrictData>  $districts
+     * @param  array<int, \App\DataObjects\ZoneData>  $zones
+     * @param  array<int, \App\DataObjects\PanchayatData>  $panchayats
+     * @param  array<int, AssetData>  $assets
+     * @return array<int, DistrictSummary>
+     */
+    private function districtCards(array $districts, array $zones, array $panchayats, array $assets): array
+    {
+        $cards = [];
+        foreach ($districts as $district) {
+            $zoneIds = array_map(static fn ($z): string => $z->id, array_filter($zones, static fn ($z): bool => $z->districtId === $district->id));
+            $districtAssets = array_values(array_filter($assets, static fn (AssetData $a): bool => $a->districtId === $district->id));
+
+            $cards[] = new DistrictSummary(
+                id: $district->id,
+                name: $district->name,
+                zoneCount: count($zoneIds),
+                panchayatCount: count(array_filter($panchayats, static fn ($p): bool => in_array($p->zoneId, $zoneIds, true))),
+                assetCount: count($districtAssets),
+                health: $this->healthSummary($districtAssets),
+            );
+        }
+
+        usort($cards, static fn (DistrictSummary $a, DistrictSummary $b): int => $b->assetCount <=> $a->assetCount ?: strcmp($a->name, $b->name));
+
+        return $cards;
+    }
+
+    /**
+     * The newest assets (by created_at), lifecycle-enriched for the status badge.
+     *
+     * @param  array<int, AssetData>  $assets
+     * @return array<int, AssetData>
+     */
+    private function recentAssets(array $assets, int $limit = 5): array
+    {
+        $sorted = $assets;
+        usort($sorted, static fn (AssetData $a, AssetData $b): int => ($b->createdAt ?? '') <=> ($a->createdAt ?? ''));
+
+        return array_map(
+            fn (AssetData $a): AssetData => $a->withLifecycle($this->lifecycle->compute($a->constructionYear)),
+            array_slice($sorted, 0, $limit),
         );
     }
 
@@ -77,7 +126,7 @@ final class DashboardService
         ];
 
         foreach ($assets as $asset) {
-            $status = $this->lifecycle->compute($asset->constructionYear, $asset->expectedLife)->status;
+            $status = $this->lifecycle->compute($asset->constructionYear)->status;
             $tally[$status->value]++;
         }
 

@@ -6,6 +6,7 @@ namespace App\Contracts;
 
 use App\DataObjects\AssetData;
 use App\DataObjects\CategoryData;
+use App\DataObjects\DistrictData;
 use App\DataObjects\PanchayatData;
 use App\DataObjects\ZoneData;
 
@@ -21,6 +22,9 @@ interface DashboardDataProvider
 {
     /** @return array<int, AssetData> */
     public function allAssets(): array;
+
+    /** @return array<int, DistrictData> */
+    public function districts(): array;
 
     /** @return array<int, ZoneData> */
     public function zones(): array;

@@ -11,6 +11,7 @@ use App\DataObjects\DistrictData;
 use App\DataObjects\PanchayatData;
 use App\DataObjects\PhotoData;
 use App\DataObjects\ZoneData;
+use App\Support\Auth\Scope;
 use App\Support\Filtering\AssetFilter;
 use App\Support\Lifecycle\LifecycleCalculator;
 
@@ -28,7 +29,21 @@ final class AssetService
     public function __construct(
         private readonly AssetDataProvider $provider,
         private readonly LifecycleCalculator $lifecycle,
+        private readonly Scope $scope,
     ) {
+    }
+
+    /**
+     * Raw assets visible to the current user (role-based scope, CR-01 #6).
+     *
+     * @return array<int, AssetData>
+     */
+    private function scopedRawAssets(): array
+    {
+        return array_values(array_filter(
+            $this->provider->assets(),
+            fn (AssetData $asset): bool => $this->scope->allowsAsset($asset),
+        ));
     }
 
     /**
@@ -40,7 +55,7 @@ final class AssetService
     {
         $assets = array_map(
             fn (AssetData $asset): AssetData => $this->enrich($asset),
-            $this->provider->assets(),
+            $this->scopedRawAssets(),
         );
 
         $matched = array_filter(
@@ -57,12 +72,51 @@ final class AssetService
         return count($this->list($filter));
     }
 
-    /** A single asset, lifecycle-enriched, or null when not found (SL-05). */
+    /**
+     * Map markers for the Asset Intelligence Map — role-scoped, lifecycle-enriched,
+     * and limited to assets with valid coordinates. Returns plain arrays ready for
+     * the map's JS payload (status colour from the canonical enum; no UI/route logic).
+     *
+     * @return array<int, array{id:string,name:string,number:string,category:?string,panchayat:?string,status:string,color:string,year:?int,remaining:?int,lat:float,lng:float}>
+     */
+    public function mapMarkers(AssetFilter $filter): array
+    {
+        $markers = [];
+        foreach ($this->list($filter) as $asset) {
+            if (! $asset->hasValidCoordinates()) {
+                continue;
+            }
+
+            $status = $asset->lifecycle?->status ?? \App\Enums\LifecycleStatus::Unknown;
+
+            $markers[] = [
+                'id' => $asset->id,
+                'name' => $asset->assetName,
+                'number' => $asset->assetNumber,
+                'category' => $asset->categoryName,
+                'panchayat' => $asset->panchayatName,
+                'status' => $status->value,
+                'color' => $status->color(),
+                'year' => $asset->constructionYear,
+                'remaining' => $asset->lifecycle?->remainingLife,
+                'lat' => $asset->latitude,
+                'lng' => $asset->longitude,
+            ];
+        }
+
+        return $markers;
+    }
+
+    /** A single asset, lifecycle-enriched, or null when not found or out of scope (SL-05). */
     public function detail(string $assetId): ?AssetData
     {
         $asset = $this->provider->assetById($assetId);
 
-        return $asset === null ? null : $this->enrich($asset);
+        if ($asset === null || ! $this->scope->allowsAsset($asset)) {
+            return null;
+        }
+
+        return $this->enrich($asset);
     }
 
     /** @return array<int, PhotoData> */
@@ -76,19 +130,30 @@ final class AssetService
     /** @return array<int, DistrictData> District is the top of the hierarchy. */
     public function districts(): array
     {
-        return $this->provider->districts();
+        return array_values(array_filter(
+            $this->provider->districts(),
+            fn (DistrictData $d): bool => $this->scope->allowsDistrict($d->id),
+        ));
     }
 
     /** @return array<int, ZoneData> */
     public function zones(?string $districtId = null): array
     {
-        return $this->provider->zones($districtId);
+        return array_values(array_filter(
+            $this->provider->zones($districtId),
+            fn (ZoneData $z): bool => $this->scope->allowsZone($z->id, $z->districtId),
+        ));
     }
 
     /** @return array<int, PanchayatData> */
     public function panchayats(?string $zoneId = null): array
     {
-        return $this->provider->panchayats($zoneId);
+        $allowedZoneIds = array_map(static fn (ZoneData $z): string => $z->id, $this->zones());
+
+        return array_values(array_filter(
+            $this->provider->panchayats($zoneId),
+            fn (PanchayatData $p): bool => $this->scope->allowsPanchayat($p->id) && in_array($p->zoneId, $allowedZoneIds, true),
+        ));
     }
 
     /** @return array<int, CategoryData> */
@@ -195,6 +260,26 @@ final class AssetService
         );
     }
 
+    // ---- Flat counts across the whole (scoped) dataset (used by the index screens) ----
+
+    /** Asset count per zone across the user's full scope. @return array<string, int> */
+    public function assetCountsPerZone(): array
+    {
+        return $this->tally(fn (AssetData $a): ?string => $a->zoneId);
+    }
+
+    /** Asset count per panchayat across the user's full scope. @return array<string, int> */
+    public function assetCountsPerPanchayat(): array
+    {
+        return $this->tally(fn (AssetData $a): ?string => $a->panchayatId);
+    }
+
+    /** Asset count per category across the user's full scope. @return array<string, int> */
+    public function assetCountsPerCategory(): array
+    {
+        return $this->tally(fn (AssetData $a): ?string => $a->categoryId);
+    }
+
     /**
      * Group raw assets by a key, optionally scoped by a predicate, and count.
      *
@@ -206,7 +291,7 @@ final class AssetService
     {
         $counts = [];
 
-        foreach ($this->provider->assets() as $asset) {
+        foreach ($this->scopedRawAssets() as $asset) {
             if ($scope !== null && ! $scope($asset)) {
                 continue;
             }
@@ -226,7 +311,7 @@ final class AssetService
     private function enrich(AssetData $asset): AssetData
     {
         return $asset->withLifecycle(
-            $this->lifecycle->compute($asset->constructionYear, $asset->expectedLife),
+            $this->lifecycle->compute($asset->constructionYear),
         );
     }
 

@@ -16,7 +16,10 @@
                     :title="$panchayat->name"
                     :count="$counts[$panchayat->id] ?? 0"
                     :href="route('categories', ['panchayat' => $panchayat->id])"
-                />
+                    accent="#7C3AED"
+                >
+                    <x-slot:icon><x-nav-icon name="panchayats" /></x-slot:icon>
+                </x-node-card>
             @endforeach
         </div>
     @endif

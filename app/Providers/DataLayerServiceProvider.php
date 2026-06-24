@@ -63,6 +63,7 @@ final class DataLayerServiceProvider extends ServiceProvider
         $this->app->singleton(
             LifecycleCalculator::class,
             static fn (): LifecycleCalculator => new LifecycleCalculator(
+                expectedLife: (int) config('ramp.lifecycle.expected_life', LifecycleCalculator::DEFAULT_EXPECTED_LIFE),
                 nearExpiryYears: (int) config('ramp.lifecycle.near_expiry_years', LifecycleCalculator::DEFAULT_NEAR_EXPIRY_YEARS),
             ),
         );

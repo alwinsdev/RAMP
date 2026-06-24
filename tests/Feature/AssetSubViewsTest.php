@@ -21,7 +21,7 @@ final class AssetSubViewsTest extends TestCase
             ->assertOk()
             ->assertSee('Photo Gallery')
             ->assertSee('Front view')
-            ->assertSee('Back to detail');
+            ->assertSee('Back to information');
     }
 
     public function test_photo_gallery_empty_state(): void
@@ -39,13 +39,13 @@ final class AssetSubViewsTest extends TestCase
         $this->get('/assets/AST-0001/location')
             ->assertOk()
             ->assertSee('Location')
-            ->assertSee('12 School Road, Erumapalayam, Salem, Tamil Nadu')
+            ->assertSee('Erumapalayam')
             ->assertSee('11.6643');
     }
 
     public function test_location_unavailable_when_coordinates_missing(): void
     {
-        $this->get('/assets/AST-0017/location')    // PUB-0002 has null coordinates
+        $this->get('/assets/AST-0006/location')    // FUN-0001 has null coordinates
             ->assertOk()
             ->assertSee('Location unavailable');
     }
@@ -56,7 +56,7 @@ final class AssetSubViewsTest extends TestCase
     {
         $this->get('/assets/AST-0001/lifecycle')   // 2010 / 30 yr -> Healthy
             ->assertOk()
-            ->assertSee('Lifecycle Monitoring')
+            ->assertSee('Asset Health')
             ->assertSee('Construction Year')
             ->assertSee('2010')
             ->assertSee('Healthy');
@@ -64,7 +64,7 @@ final class AssetSubViewsTest extends TestCase
 
     public function test_lifecycle_view_handles_unknown(): void
     {
-        $this->get('/assets/AST-0017/lifecycle')   // null construction year -> Unknown
+        $this->get('/assets/AST-0006/lifecycle')   // null construction year -> Unknown
             ->assertOk()
             ->assertSee('Unknown')
             ->assertSee('missing or invalid');

@@ -40,7 +40,7 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'mock',   // RAMP POC: mock users from JSON, no database
         ],
     ],
 
@@ -62,15 +62,10 @@ return [
     */
 
     'providers' => [
-        'users' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+        // Custom 'mock' driver registered in AppServiceProvider via Auth::provider().
+        'mock' => [
+            'driver' => 'mock',
         ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
     ],
 
     /*

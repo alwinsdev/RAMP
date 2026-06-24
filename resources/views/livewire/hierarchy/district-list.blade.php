@@ -17,7 +17,10 @@
                     :subtitle="$district->code ? 'Code · '.$district->code : null"
                     :count="$counts[$district->id] ?? 0"
                     :href="route('zones', ['district' => $district->id])"
-                />
+                    accent="#4F46E5"
+                >
+                    <x-slot:icon><x-nav-icon name="districts" /></x-slot:icon>
+                </x-node-card>
             @endforeach
         </div>
     @endif

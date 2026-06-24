@@ -57,10 +57,10 @@ final class AssetFilterTest extends TestCase
 
     public function test_category_filter_returns_only_that_category(): void
     {
-        $result = $this->assets->list(new AssetFilter(categoryId: 'CAT-EDU'));
+        $result = $this->assets->list(new AssetFilter(categoryId: 'CAT-PRI'));
         $this->assertNotEmpty($result);
         foreach ($result as $asset) {
-            $this->assertSame('CAT-EDU', $asset->categoryId);
+            $this->assertSame('CAT-PRI', $asset->categoryId);
         }
     }
 
@@ -75,13 +75,13 @@ final class AssetFilterTest extends TestCase
 
     public function test_status_filter_uses_computed_status(): void
     {
-        // PUB-0002 has a null construction year -> always Unknown (BR-HL-04).
+        // FUN-0001 has a null construction year -> always Unknown (BR-HL-04).
         $result = $this->assets->list(new AssetFilter(status: 'Unknown'));
         $this->assertNotEmpty($result);
         foreach ($result as $asset) {
             $this->assertSame('Unknown', $asset->lifecycle?->status->value);
         }
-        $this->assertContains('PUB-0002', array_map(static fn (AssetData $a): string => $a->assetNumber, $result));
+        $this->assertContains('FUN-0001', array_map(static fn (AssetData $a): string => $a->assetNumber, $result));
     }
 
     public function test_search_matches_name_or_number_case_insensitively(): void
@@ -96,18 +96,18 @@ final class AssetFilterTest extends TestCase
 
     public function test_search_matches_asset_number(): void
     {
-        $result = $this->assets->list(new AssetFilter(query: 'EDU-0001'));
+        $result = $this->assets->list(new AssetFilter(query: 'PRI-0001'));
         $this->assertNotEmpty($result);
-        $this->assertContains('EDU-0001', array_map(static fn (AssetData $a): string => $a->assetNumber, $result));
+        $this->assertContains('PRI-0001', array_map(static fn (AssetData $a): string => $a->assetNumber, $result));
     }
 
     public function test_filters_combine_with_and(): void
     {
-        $result = $this->assets->list(new AssetFilter(panchayatId: 'PAN-ERU', categoryId: 'CAT-EDU'));
+        $result = $this->assets->list(new AssetFilter(panchayatId: 'PAN-ERU', categoryId: 'CAT-PRI'));
         $this->assertNotEmpty($result);
         foreach ($result as $asset) {
             $this->assertSame('PAN-ERU', $asset->panchayatId);
-            $this->assertSame('CAT-EDU', $asset->categoryId);
+            $this->assertSame('CAT-PRI', $asset->categoryId);
         }
     }
 
@@ -128,7 +128,7 @@ final class AssetFilterTest extends TestCase
 
     public function test_detail_returns_enriched_asset_with_computed_status(): void
     {
-        $asset = $this->assets->detail('AST-0017'); // PUB-0002, Unknown
+        $asset = $this->assets->detail('AST-0006'); // FUN-0001, Unknown (null construction year)
         $this->assertNotNull($asset);
         $this->assertNotNull($asset->lifecycle);
         $this->assertSame('Unknown', $asset->lifecycle->status->value);
