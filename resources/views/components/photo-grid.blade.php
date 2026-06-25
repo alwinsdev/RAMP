@@ -48,7 +48,7 @@
 
         {{-- Lightbox modal --}}
         <template x-teleport="body">
-            <div x-show="index !== null" x-cloak class="fixed inset-0 z-50 flex flex-col bg-black/80 p-4 backdrop-blur-sm" @click.self="close()" x-transition.opacity>
+            <div x-show="index !== null" x-cloak class="fixed inset-0 flex flex-col bg-black/80 p-4 backdrop-blur-sm" style="z-index: 9999;" @click.self="close()" x-transition.opacity>
                 <div class="flex justify-end">
                     <button type="button" @click="close()" class="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20" aria-label="Close">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
