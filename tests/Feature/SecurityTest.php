@@ -35,6 +35,15 @@ final class SecurityTest extends TestCase
         $this->assertStringContainsString("base-uri 'self'", $csp);
     }
 
+    public function test_csp_allows_openstreetmap_tiles_and_no_stale_google_origins(): void
+    {
+        $csp = $this->get('/')->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString('tile.openstreetmap.org', $csp);   // Leaflet/OSM tiles
+        $this->assertStringNotContainsString('googleapis.com', $csp);        // Google Maps fully removed
+        $this->assertStringContainsString("img-src 'self' data: blob:", $csp);
+    }
+
     public function test_malformed_route_parameters_are_rejected(): void
     {
         // Characters outside the id pattern never reach a component — they 404.

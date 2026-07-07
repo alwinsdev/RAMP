@@ -10,6 +10,12 @@
 
 > A 5–7 minute walkthrough proving the POC's value: a single, trusted window into rural public assets, with health visible at a glance and a future-ready architecture.
 
+> ⚠️ **Superseded — historical reference only.** This script predates the CR modernization
+> (role-based auth, the 10-category model, renamed assets) and the keyless map migration.
+> **Use [`docs/handover/01-stakeholder-demo-script.md`](handover/01-stakeholder-demo-script.md)**
+> for the current demo. Details below (auth-less flow, `EDU-0001`, 4 categories, Google Maps,
+> "73 passing") reflect an earlier build.
+
 ---
 
 ## 1. Setup (before the demo)

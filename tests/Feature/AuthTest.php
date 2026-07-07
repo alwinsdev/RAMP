@@ -58,6 +58,22 @@ final class AuthTest extends TestCase
         $this->assertFalse(Auth::check());
     }
 
+    public function test_login_locks_out_after_five_failed_attempts(): void
+    {
+        Auth::logout();
+
+        $component = Livewire::test(Login::class)->set('email', 'admin@ramp.gov.in');
+
+        // Five wrong-password attempts exhaust the throttle bucket (email + IP).
+        for ($i = 0; $i < 5; $i++) {
+            $component->set('password', 'wrong-password')->call('login')->assertHasErrors('email');
+        }
+
+        // Locked out: even the correct password is now refused until the window elapses.
+        $component->set('password', 'password')->call('login')->assertHasErrors('email');
+        $this->assertFalse(Auth::check());
+    }
+
     public function test_administrator_sees_all_assets(): void
     {
         $this->actingAsRole('administrator');

@@ -10,9 +10,9 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 /**
- * Location / Map sub-view (SCR-08). Renders a Google Maps pin at the asset's
- * coordinates, or a graceful "location unavailable" state when they are missing
- * or invalid (BR-LO-02/03). Returns to Asset Detail (BR-NV-07).
+ * Location / Map sub-view (SCR-08). Renders a Leaflet + OpenStreetMap pin at the
+ * asset's coordinates, or a graceful "location unavailable" state when they are
+ * missing or invalid (BR-LO-02/03). Returns to Asset Detail (BR-NV-07).
  */
 #[Layout('layouts.app')]
 final class LocationView extends Component
@@ -37,7 +37,6 @@ final class LocationView extends Component
 
         return view('livewire.assets.location-view', [
             'asset' => $asset,
-            'mapsKey' => (string) config('ramp.google_maps_api_key', ''),
             'breadcrumbs' => $crumbs->build($asset?->context() ?? [], [
                 ['label' => $asset?->assetName ?? 'Asset', 'url' => route('assets.show', ['asset' => $this->assetId])],
                 ['label' => 'Location', 'url' => null],

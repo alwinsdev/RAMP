@@ -6,7 +6,7 @@
 | Audience | Project Sponsor, Product Owner, District/Panchayat officials, Steering Committee |
 | Duration | 12–15 minutes (+ 5 min Q&A) |
 | Environment | POC build on mock data — `php artisan serve` → http://127.0.0.1:8000 |
-| Pre-requisite | Complete [Pre-Demo Configuration Checklist](04-pre-demo-configuration-checklist.md) first (esp. Google Maps key referrer) |
+| Pre-requisite | Complete [Pre-Demo Configuration Checklist](04-pre-demo-configuration-checklist.md) first (maps are keyless OSM — just needs internet) |
 
 > **Goal of the demo:** show that an official can, within seconds and without training, see *how many* public assets exist, *where* they are, and *which need attention* — and that the platform is built to grow into a production system without rework.
 
@@ -67,7 +67,7 @@
 **Do:** Click **View on Map** → the full Location screen.
 **Say:** *"A larger interactive map, an asset information panel, and one-click actions — Directions, Open in Google Maps, and Copy Coordinates — so a field officer can navigate straight to the asset."*
 
-> If the live map shows a fallback, mention the API key referrer is being finalised; the integration and coordinates are correct.
+> The map uses free OpenStreetMap tiles (no API key). If tiles are slow, it's just network latency; the pin and coordinates are always correct.
 
 ---
 
@@ -121,6 +121,6 @@ Login (Admin) → Dashboard (KPIs + Asset Intelligence Map) → Salem card → N
 ## Do / Don't on the day
 - **Do** keep to the click-path above; lead with totals; let every number be a doorway.
 - **Do** showcase the **Asset Intelligence Map** (dashboard + full Map View) — it's the flagship; use the filters and heatmap to tell the "where & what needs attention" story.
-- **Don't** demo the live map without first confirming the API key referrer (or pre-load the page); if it shows a fallback, frame the integration as correct and the referrer as being finalised.
+- **Do** pre-load the Map View once so the OpenStreetMap tiles are warm; maps are keyless, so there's nothing to configure — just ensure the machine has internet.
 
 *End of Demo Script.*

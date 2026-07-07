@@ -41,6 +41,12 @@ final class SecurityHeaders
             'Content-Security-Policy' => $this->contentSecurityPolicy(),
         ];
 
+        // Enforce HTTPS for a year once served over TLS in production (Rule 17).
+        // Only emitted on secure production responses so local HTTP dev is unaffected.
+        if (app()->environment('production') && $request->isSecure()) {
+            $headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
+        }
+
         foreach ($headers as $name => $value) {
             // Don't clobber a header a downstream layer may have intentionally set.
             if (! $response->headers->has($name)) {

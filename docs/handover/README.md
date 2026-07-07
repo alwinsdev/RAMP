@@ -1,8 +1,8 @@
 # RAMP — POC Handover Package
 
 > Rural Asset Management Platform (RAMP) · Proof of Concept · Government of Tamil Nadu (mock data)
-> Stack: Laravel 12 · PHP 8.2+ · Livewire 3 · Alpine · Tailwind v4 · ApexCharts · Google Maps JS
-> Status: **POC complete · 94 automated tests passing** · demo-ready (subject to the Pre-Demo Configuration checklist)
+> Stack: Laravel 12 · PHP 8.2+ · Livewire 3 · Alpine · Tailwind v4 · ApexCharts · Leaflet + OpenStreetMap
+> Status: **POC complete · 110 automated tests passing** · demo-ready (subject to the Pre-Demo Configuration checklist)
 
 This folder contains the client-facing and internal handover documents for the RAMP POC.
 
@@ -11,7 +11,7 @@ This folder contains the client-facing and internal handover documents for the R
 | 01 | [Stakeholder Demo Script](01-stakeholder-demo-script.md) | Sponsors, Product Owner, Presenter | The exact click-path and talking points for a 12–15 min demo |
 | 02 | [UAT Checklist](02-uat-checklist.md) | QA, Product Owner, Business users | Pass/fail acceptance checks across all modules |
 | 03 | [Demo Data Validation Checklist](03-demo-data-validation-checklist.md) | QA, Developer | Verifies the mock dataset is correct and demo-safe |
-| 04 | [Pre-Demo Configuration Checklist](04-pre-demo-configuration-checklist.md) | Developer, Presenter | Everything to set up before the demo (incl. Google Maps) |
+| 04 | [Pre-Demo Configuration Checklist](04-pre-demo-configuration-checklist.md) | Developer, Presenter | Everything to set up before the demo |
 | 05 | [Deployment Checklist](05-deployment-checklist.md) | DevOps, Solution Architect | Steps to stand up the POC on a shared/host environment |
 | 06 | [POC Completion Report](06-poc-completion-report.md) | Sponsors, Steering Committee | What was delivered, against objectives |
 | 07 | [Future Roadmap (Phase 2 & 3)](07-future-roadmap.md) | Sponsors, Architect, Delivery Lead | The path from POC to production |

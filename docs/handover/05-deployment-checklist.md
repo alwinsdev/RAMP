@@ -45,7 +45,8 @@ php artisan view:cache
 | DP-24 | `SESSION_DRIVER` | `file` (or `cookie`) | |
 | DP-25 | `RAMP_DATA_PROVIDER` | `mock` | |
 | DP-26 | `RAMP_SECURITY_HEADERS` | `true` | |
-| DP-27 | `GOOGLE_MAPS_API_KEY` | set **and referrer-restricted to the demo domain** | |
+| DP-27 | `SESSION_ENCRYPT` | `true` | |
+| DP-28 | Maps | keyless (Leaflet + OpenStreetMap) — **no API key to configure** | |
 
 ## 4. Filesystem & permissions
 | ID | Step | Notes | Done |
@@ -59,7 +60,7 @@ php artisan view:cache
 ## 5. Web server hardening
 | ID | Step | Notes | Done |
 |---|---|---|---|
-| DP-40 | Force HTTPS; enable HSTS at the edge | | |
+| DP-40 | Force HTTPS (the app emits HSTS on secure production responses; edge HSTS optional) | | |
 | DP-41 | `TrustProxies` configured if behind a load balancer | correct scheme/IP | |
 | DP-42 | Security headers active (app middleware sets CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy) | verify response headers | |
 | DP-43 | Directory listing disabled | | |
@@ -72,8 +73,8 @@ php artisan view:cache
 | DP-51 | `npm audit` reviewed (1 low, dev-server only — not in production build) | |
 | DP-52 | Response includes `Content-Security-Policy`, `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff` | |
 | DP-53 | Malformed asset URLs return 404 (route constraints) | |
-| DP-54 | Google Maps key restricted by referrer + API | |
-| DP-55 | Reference: [`docs/14-security-audit.md`](../14-security-audit.md) | |
+| DP-54 | Login lockout works (6th wrong attempt is throttled); response includes `Strict-Transport-Security` over HTTPS | |
+| DP-55 | Reference: [`docs/14-security-audit.md`](../14-security-audit.md) · [`.claude/SECURITY.md`](../../.claude/SECURITY.md) | |
 
 ## 7. Smoke test (post-deploy)
 | ID | Step | Expected | Done |
@@ -81,8 +82,8 @@ php artisan view:cache
 | DP-60 | `GET /` (signed out) | redirects to `/login` over HTTPS | |
 | DP-61 | Login with each demo account | correct scope per role | |
 | DP-62 | Dashboard | 100 assets; reconciles | |
-| DP-63 | Open an asset → Location | map renders (referrer ok) | |
-| DP-64 | `php artisan test` (staging copy) | 94 passed | |
+| DP-63 | Open an asset → Location | Leaflet/OSM map renders (no key needed) | |
+| DP-64 | `php artisan test` (staging copy) | 110 passed | |
 
 ## 8. Rollback / operations
 | ID | Step | Notes | Done |

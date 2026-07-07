@@ -20,6 +20,14 @@ const OSM_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const OSM_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const osmLayer = () => L.tileLayer(OSM_TILES, { maxZoom: 19, attribution: OSM_ATTRIB });
 
+// Escape untrusted values before injecting them into popup HTML. Marker data is mock
+// today, but comes from a live API in Phase 2 — treat it as untrusted now (Rule 7).
+const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+));
+// Only accept a hex colour for style contexts; fall back to brand blue otherwise.
+const safeColor = (v) => (/^#[0-9a-fA-F]{3,8}$/.test(String(v)) ? String(v) : '#1A73E8');
+
 // A coloured SVG map pin as a Leaflet divIcon (no external image assets to 404 on).
 const pinIcon = (color = '#1A73E8') => L.divIcon({
     className: 'ramp-pin',
@@ -217,18 +225,21 @@ document.addEventListener('alpine:init', () => {
         popup(d) {
             const remaining = (d.remaining === null || d.remaining === undefined)
                 ? '—'
-                : (d.remaining > 0 ? `${d.remaining} yr remaining` : `${Math.abs(d.remaining)} yr past life`);
+                : (d.remaining > 0 ? `${Number(d.remaining)} yr remaining` : `${Math.abs(Number(d.remaining))} yr past life`);
+            const color = safeColor(d.color);
+            const id = encodeURIComponent(String(d.id ?? ''));
+            const year = d.year ? escapeHtml(d.year) : '—';
             return `<div style="font-family:inherit;min-width:210px;padding:2px 2px 4px">
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-                    <span style="display:inline-block;width:9px;height:9px;border-radius:9999px;background:${d.color}"></span>
-                    <span style="font-weight:700;color:${d.color}">${d.status}</span>
+                    <span style="display:inline-block;width:9px;height:9px;border-radius:9999px;background:${color}"></span>
+                    <span style="font-weight:700;color:${color}">${escapeHtml(d.status)}</span>
                 </div>
-                <div style="font-weight:700;color:#0f172a">${d.name}</div>
-                <div style="font-family:monospace;color:#5a6473;font-size:12px;margin-top:2px">${d.number}</div>
-                <div style="font-size:13px;color:#334155;margin-top:6px">${d.category}</div>
-                <div style="font-size:13px;color:#334155">${d.panchayat}</div>
-                <div style="font-size:13px;color:#334155;margin-top:4px">Built ${d.year || '—'} · ${remaining}</div>
-                <a href="/assets/${d.id}" onclick="window.Livewire.navigate('/assets/${d.id}');return false;"
+                <div style="font-weight:700;color:#0f172a">${escapeHtml(d.name)}</div>
+                <div style="font-family:monospace;color:#5a6473;font-size:12px;margin-top:2px">${escapeHtml(d.number)}</div>
+                <div style="font-size:13px;color:#334155;margin-top:6px">${escapeHtml(d.category)}</div>
+                <div style="font-size:13px;color:#334155">${escapeHtml(d.panchayat)}</div>
+                <div style="font-size:13px;color:#334155;margin-top:4px">Built ${year} · ${remaining}</div>
+                <a href="/assets/${id}" onclick="window.Livewire.navigate('/assets/${id}');return false;"
                    style="display:inline-block;margin-top:10px;background:#1a73e8;color:#fff;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">Open Asset</a>
             </div>`;
         },

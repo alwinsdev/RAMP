@@ -119,9 +119,15 @@ final class AssetService
         return $this->enrich($asset);
     }
 
-    /** @return array<int, PhotoData> */
+    /** @return array<int, PhotoData> Photos for an in-scope asset; empty otherwise (defence in depth, SL-05). */
     public function photos(string $assetId): array
     {
+        $asset = $this->provider->assetById($assetId);
+
+        if ($asset === null || ! $this->scope->allowsAsset($asset)) {
+            return [];
+        }
+
         return $this->provider->photosByAsset($assetId);
     }
 

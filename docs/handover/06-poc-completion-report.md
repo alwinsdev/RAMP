@@ -13,7 +13,7 @@
 ## 1. Executive summary
 RAMP set out to prove that a single, hierarchy-aware, government-grade platform could make rural public-asset inventory and **lifecycle health visible at a glance** — and that it could be built so the move to production is incremental and low-risk.
 
-**The POC achieves this.** It delivers a complete, role-secured user journey from a monitoring dashboard down to an individual asset's information, health, location, and photos, on a realistic Tamil Nadu dataset, with **103 automated tests passing** and a clean, swappable data architecture. The application is **demo-ready** subject to a short pre-demo configuration checklist (chiefly the Google Maps key referrer).
+**The POC achieves this.** It delivers a complete, role-secured user journey from a monitoring dashboard down to an individual asset's information, health, location, and photos, on a realistic Tamil Nadu dataset, with **110 automated tests passing** and a clean, swappable data architecture. The application is **demo-ready** subject to a short pre-demo configuration checklist (maps are keyless OpenStreetMap — no API key needed).
 
 ---
 
@@ -67,7 +67,7 @@ RAMP set out to prove that a single, hierarchy-aware, government-grade platform 
 | Security | Baseline headers + CSP, route constraints, dependency audit clean |
 
 ## 6. Technology & architecture
-- **Stack:** Laravel 12 · PHP 8.2+ · Livewire 3 · Alpine · Tailwind v4 · ApexCharts · Google Maps JS.
+- **Stack:** Laravel 12 · PHP 8.2+ · Livewire 3 · Alpine · Tailwind v4 · ApexCharts · Leaflet + OpenStreetMap (keyless maps).
 - **Pattern:** `Livewire → Services → Contracts → Mock Providers → mock JSON`. The UI and services never read JSON or compute domain logic; everything flows through contracts and shared domain services.
 - **Migration promise (validated by inspection & tests):** replacing the mock provider with an Eloquent/API provider behind the same contracts requires **no UI or service changes** — selected by one config value.
 - **Security:** security-headers middleware (CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy), route-parameter constraints, least-privilege filesystem, dependency audit. See `docs/14-security-audit.md`.
@@ -88,10 +88,10 @@ RAMP set out to prove that a single, hierarchy-aware, government-grade platform 
 ## 9. Risks (residual, all manageable)
 | Risk | Severity | Mitigation |
 |---|---|---|
-| Maps key referrer not configured for demo host | High (visual) | Configure referrer (Pre-Demo checklist) — graceful fallback otherwise |
+| No internet on the demo machine (OpenStreetMap tiles won't load) | Low (visual) | Pre-load Map View while online; the pin/coordinates are always correct |
 | Stub screens clicked during demo | Medium | Avoid or frame as "coming next" |
 | No formal a11y/device QA | Medium | Quick manual pass pre-demo; full audit in Phase 2 |
-| Debug/secrets if hosted | Medium | `APP_DEBUG=false`, restrict key, secure `.env` (Deployment checklist) |
+| Debug/secrets if hosted | Medium | `APP_DEBUG=false`, secure `.env`, HTTPS/HSTS (Deployment checklist) |
 
 ## 10. Recommendation
 The POC **meets its objectives** and is ready to demonstrate to stakeholders. We recommend:

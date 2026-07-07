@@ -80,16 +80,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Google Maps JavaScript API
-    |--------------------------------------------------------------------------
-    |
-    | Consumed by the Location View (Sprint 2). Empty key => the view degrades
-    | gracefully to the coordinate readout / "location unavailable" state.
-    */
-    'google_maps_api_key' => env('GOOGLE_MAPS_API_KEY', ''),
-
-    /*
-    |--------------------------------------------------------------------------
     | Security headers
     |--------------------------------------------------------------------------
     |

@@ -7,7 +7,7 @@
 | Goal | A clean, fast, error-free demo environment |
 | Time | ~20–30 minutes the first time; ~5 minutes thereafter |
 
-> Complete this **before** the [Stakeholder Demo Script](01-stakeholder-demo-script.md). The single highest-risk item is the **Google Maps API key referrer** (Step 5).
+> Complete this **before** the [Stakeholder Demo Script](01-stakeholder-demo-script.md). Maps are keyless (Leaflet + OpenStreetMap), so the main requirement is a green test suite, built assets, and internet access for the map tiles.
 
 ---
 
@@ -34,12 +34,12 @@ npm run build
 
 ## 3. Health check
 ```bash
-php artisan test          # expect: 94 passed
+php artisan test          # expect: 110 passed
 php artisan config:clear
 ```
 | ID | Step | Verify | Done |
 |---|---|---|---|
-| PD-20 | Test suite green | **94 passed** | |
+| PD-20 | Test suite green | **110 passed** | |
 | PD-21 | Data validation passes | See [Demo Data Validation](03-demo-data-validation-checklist.md) one-command check | |
 
 ## 4. Environment settings (`.env`)
@@ -50,17 +50,16 @@ php artisan config:clear
 | PD-32 | `APP_DEBUG` | `true` local · **`false` if hosted** | Never expose stack traces publicly |
 | PD-33 | `SESSION_DRIVER` | `file` | No database needed |
 | PD-34 | `RAMP_DATA_PROVIDER` | `mock` | Phase-1 data source |
-| PD-35 | `GOOGLE_MAPS_API_KEY` | *(your key)* | See Step 5 |
+| PD-35 | `SESSION_ENCRYPT` | `true` | Encrypts the session payload |
 
-## 5. ⭐ Google Maps API key (highest risk)
+## 5. Maps (no configuration needed)
 | ID | Step | Done |
 |---|---|---|
-| PD-40 | Key present in `.env` as `GOOGLE_MAPS_API_KEY` | |
-| PD-41 | **Maps JavaScript API** enabled for the key (Google Cloud Console) | |
-| PD-42 | **HTTP referrer restriction includes the demo host** (`127.0.0.1`, `localhost`, and/or the hosted domain) | |
-| PD-43 | Verify: open an asset → Location → map renders (not the "Map could not be loaded" fallback) | |
+| PD-40 | Maps use **Leaflet + OpenStreetMap** — **no API key, no billing, no referrer setup** | |
+| PD-41 | Verify: open an asset → Location → the OSM map renders with a pin | |
+| PD-42 | Verify: **Map View** (sidebar) → the Asset Intelligence Map renders with clustered markers | |
 
-> If the referrer is not configured, the map shows a graceful coordinate fallback. The POC still works — but confirm before the demo, or pre-frame it. **Restrict the key by referrer + API** (it is exposed client-side by necessity).
+> The former Google Maps dependency (and its API-key/referrer risk) has been **removed**. Maps now load free OpenStreetMap tiles over the internet with no key — the previous "highest-risk" demo item no longer applies. The only requirement is internet access for the map tiles.
 
 ## 6. Demo accounts (smoke test each)
 | ID | Account | Password | Expected | Done |
@@ -81,7 +80,7 @@ php artisan config:clear
 ## 8. Decisions to make before the demo
 | ID | Decision | Recommendation | Done |
 |---|---|---|---|
-| PD-70 | Feature the **Asset Intelligence Map** (dashboard + Map View) | Demo it — it's the flagship; confirm the Maps key referrer first (PD-64) | |
+| PD-70 | Feature the **Asset Intelligence Map** (dashboard + Map View) | Demo it — it's the flagship; keyless OSM, just needs internet for tiles | |
 | PD-71 | Online vs offline demo | Maps + fonts need internet; have a backup screenshot deck | |
 | PD-72 | Which roles to show | Admin + Panchayat Officer (clearest contrast) | |
 
